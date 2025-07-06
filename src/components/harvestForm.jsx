@@ -1,69 +1,96 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWriteContract } from "wagmi";
 import AppleLifecycleABI from "../abi/apple.json";
+import {
+  generateHumidity,
+  generateChemicals,
+} from "../utils/sensorDataGenerator";
+
+import { SoilUsed } from "../utils/soilUsed";
 
 const CONTRACT_ADDRESS = "0x83614Fb40F7532590752aD32e60050d661ceffE1";
+const abi = AppleLifecycleABI.abi;
 
 export default function HarvestForm() {
-  const [soil, setSoil] = useState("");
+  const [soil, setSoil] = useState(""); // initially empty
   const [humidity, setHumidity] = useState("");
   const [chemicals, setChemicals] = useState("");
   const [status, setStatus] = useState("");
-  const abi = AppleLifecycleABI.abi;
+  const [count, setCount] = useState(0);
 
-  const { writeContract, isPending, isSuccess, error } = useWriteContract();
+  const { writeContract, isSuccess, error } = useWriteContract();
 
   function parseUintArray(str) {
     return str.split(",").map((s) => BigInt(s.trim()));
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!soil || !humidity || !chemicals) {
-      setStatus("Please fill all fields.");
-      return;
-    }
+  async function submitSyntheticData(soilStr, humidityStr, chemicalsStr) {
     try {
       await writeContract({
         address: CONTRACT_ADDRESS,
         abi,
         functionName: "createApple",
-        args: [soil, parseUintArray(humidity), parseUintArray(chemicals)],
+        args: [
+          soilStr,
+          parseUintArray(humidityStr),
+          parseUintArray(chemicalsStr),
+        ],
       });
-      setStatus("Transaction sent!");
+      setStatus(`Submission #${count + 1} sent!`);
     } catch (err) {
       setStatus("Error: " + (err.shortMessage || err.message));
     }
   }
 
+  useEffect(() => {
+    const initialSoil = SoilUsed();
+    setSoil(initialSoil);
+
+    let submissionCount = 0;
+    const maxSubmissions = 5;
+
+    const interval = setInterval(() => {
+      if (submissionCount >= maxSubmissions) {
+        clearInterval(interval);
+        setStatus("Auto submission finished.");
+        return;
+      }
+
+      const newHumidity = generateHumidity();
+      const newChemicals = generateChemicals();
+
+      setHumidity(newHumidity);
+      setChemicals(newChemicals);
+      setCount(submissionCount + 1);
+      submitSyntheticData(initialSoil, newHumidity, newChemicals);
+
+      submissionCount++;
+    }, 9000); // every 9 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <form onSubmit={handleSubmit}>
-      <h3>Log Harvest Data</h3>
-      <input
-        type="text"
-        placeholder="Soil Composition"
-        value={soil}
-        onChange={(e) => setSoil(e.target.value)}
-      />
+    <form onSubmit={(e) => e.preventDefault()}>
+      <h3>Auto Logging Harvest Data</h3>
+
+      <label>Soil Composition</label>
+      <input type="text" value={soil} readOnly />
       <br />
-      <input
-        type="text"
-        placeholder="Humidity readings (comma separated)"
-        value={humidity}
-        onChange={(e) => setHumidity(e.target.value)}
-      />
+
+      <label>Humidity Readings</label>
+      <input type="text" value={humidity} readOnly />
       <br />
-      <input
-        type="text"
-        placeholder="Chemical composition (comma separated)"
-        value={chemicals}
-        onChange={(e) => setChemicals(e.target.value)}
-      />
+
+      <label>Chemical Composition</label>
+      <input type="text" value={chemicals} readOnly />
       <br />
-      <button type="submit" disabled={isPending}>
-        {isPending ? "Submitting..." : "Submit"}
+
+      <button type="button" disabled>
+        Auto Submitting...
       </button>
+
       <p>{status}</p>
       {isSuccess && <p>Success!</p>}
       {error && (
