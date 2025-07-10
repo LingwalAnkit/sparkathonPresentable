@@ -232,63 +232,58 @@ export default function HarvestForm({ onHarvestComplete }) {
 
   /* ------------- UI ------------- */
   return (
-    <div className="flex flex-col md:flex-row bg-gray-100 mt-6 gap-6">
-      {/* Debug info panel */}
-      <div className="w-full bg-yellow-50 border border-yellow-200 rounded p-4 mb-4">
-        <h4 className="font-bold text-yellow-800 mb-2">🐛 Debug Info</h4>
-        <div className="text-sm text-yellow-700 space-y-1">
-          <p>Wallet Connected: {isConnected ? "✅" : "❌"}</p>
-          <p>Waiting for Event: {isWaitingForEvent ? "⏳" : "❌"}</p>
-          <p>Transaction Hash: {transactionHash || "None"}</p>
-          <p>Callback Function: {onHarvestComplete ? "✅" : "❌"}</p>
-          <p>Readings Count: {readings.length}</p>
-        </div>
-      </div>
-
-      {/* History */}
-      <div className="md:w-1/3 w-full">
-        <div className="bg-white shadow-md rounded-xl p-6 border h-full">
-          <h3 className="text-xl font-bold mb-4 text-center">Sensor History</h3>
-          {readings.length === 0 ? (
-            <p className="text-gray-500">Waiting…</p>
-          ) : (
-            <ul className="space-y-2 text-gray-700 text-sm">
-              {readings.map((r) => (
-                <li key={r.idx}>
-                  <b>#{r.idx}</b> Hum {r.humidity}%, Nitrate {r.chemical} ppm
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {/* Live cards + animation */}
-      <div className="md:w-2/3 w-full flex flex-col gap-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            ["Soil Type", soil],
-            ["Humidity", currentReading ? `${currentReading.humidity}%` : "…"],
-            [
-              "Nitrate",
-              currentReading ? `${currentReading.chemical} ppm` : "…",
-            ],
-          ].map(([t, v]) => (
-            <div
-              key={t}
-              className="bg-white shadow-md rounded-xl p-6 border text-center"
-            >
-              <h4 className="font-semibold text-gray-700 mb-1">{t}</h4>
-              <p className="text-gray-600">{v}</p>
-            </div>
-          ))}
+    <div className="flex flex-col md:flex-col bg-gray-100 mt-6 gap-6">
+      <div className="flex flex-row gap-4">
+        {/* History */}
+        <div className="md:w-1/3 w-full">
+          <div className="bg-white shadow-md rounded-xl p-6 border h-full">
+            <h3 className="text-3xl font-bold text-center mb-6">
+              Sensor History
+            </h3>
+            {readings.length === 0 ? (
+              <p className="text-gray-500">Waiting…</p>
+            ) : (
+              <ul className="space-y-6 text-gray-700 text-md">
+                {readings.map((r) => (
+                  <li key={r.idx}>
+                    <b>#{r.idx}</b> Hum {r.humidity}%, Nitrate {r.chemical} ppm
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
-        <div className="flex justify-center">
-          <Lottie
-            animationData={farmAnimation}
-            className="w-[300px] h-[300px]"
-          />
+        {/* Live cards + animation */}
+        <div className="md:w-2/3 w-full flex flex-col gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-lg">
+            {[
+              ["Soil Type", soil],
+              [
+                "Humidity",
+                currentReading ? `${currentReading.humidity}%` : "…",
+              ],
+              [
+                "Nitrate",
+                currentReading ? `${currentReading.chemical} ppm` : "…",
+              ],
+            ].map(([t, v]) => (
+              <div
+                key={t}
+                className="bg-white shadow-md rounded-xl p-6 border text-center"
+              >
+                <h4 className="font-semibold text-gray-700 mb-1">{t}</h4>
+                <p className="text-gray-600">{v}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-center">
+            <Lottie
+              animationData={farmAnimation}
+              className="w-[425px] h-[425px]"
+            />
+          </div>
         </div>
       </div>
     </div>
