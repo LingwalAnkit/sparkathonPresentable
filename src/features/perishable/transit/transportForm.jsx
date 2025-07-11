@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import AppleLifecycleABI from "../../../abi/apple.json";
 import { useTransportData } from "./hook/useTransportData";
 import JourneyProgress from "./components/progress";
-import TransportTimeline from "./components/transportTimelineortTimeline";
+import TransportTimeline from "./components/transportTimeline";
 import LiveSensorData from "./components/sensorData";
 import JourneyMetrics from "./components/journeyMetric";
 import SensorReadingsHistory from "./components/readingHistory";
@@ -135,18 +135,19 @@ export default function TransportForm({ appleId, onTransitComplete }) {
         <JourneyProgress journeyInfo={journeyInfo} />
         <TransportTimeline startT={startT} endT={endT} />
       </div>
-
-      <LiveSensorData current={current} />
-
       <JourneyMetrics metrics={journeyMetrics} />
-
-      <SensorReadingsHistory
-        readings={readings}
-        isCollecting={isCollecting}
-        onSubmit={submitToChain}
-        isWaitingForTx={isWaitingForTx}
-        status={status}
-      />
+      <div className="flex flex-row gap-6 w-full">
+        <SensorReadingsHistory
+          readings={readings}
+          isCollecting={isCollecting}
+          onSubmit={submitToChain}
+          isWaitingForTx={isWaitingForTx}
+          status={status}
+        />
+        <div>
+          <LiveSensorData current={current} />
+        </div>
+      </div>
     </div>
   );
 }

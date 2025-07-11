@@ -25,12 +25,7 @@ export default function TransportLifeCycle() {
 
   const handleStorageComplete = (route) => {
     console.log("🎯 handleStorageComplete called with route:", route);
-    if (route === "COMPLETED") {
-      next("DONE");
-    } else {
-      // Handle other routes like CHARITY, COLD_CHAMBER, SALE
-      next("DONE");
-    }
+    next("DONE");
   };
 
   const next = (newStage) => {
@@ -39,7 +34,7 @@ export default function TransportLifeCycle() {
     setTimeout(() => {
       setStage(newStage);
       setShowFx(false);
-    }, 1000);
+    }, 5000); // 5-second animation duration
   };
 
   useEffect(() => {
@@ -49,33 +44,49 @@ export default function TransportLifeCycle() {
 
   return (
     <div className="p-6 w-full">
-      <h1 className="text-3xl font-bold text-blue-500 text-center mb-4">
-        Perishable Good Lifecycle Tracker
-      </h1>
-
       <div>
+        <h1 className="text-3xl font-bold text-blue-500 text-center mb-4">
+          Perishable Good Lifecycle Tracker
+        </h1>
+
         {appleId && (
           <p className="text-center pb-4">
             <b>Apple ID:</b> {appleId}
           </p>
         )}
 
-        {/* transition overlay */}
+        {/* Transition Lottie animation only */}
         <AnimatePresence>
           {showFx && (
             <motion.div
               key="fx"
-              className="fixed inset-0 flex items-center justify-center bg-white/80 z-50"
+              className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none bg-white bg-opacity-40 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              <Lottie animationData={tractor} style={{ width: 250 }} />
+              <motion.div
+                initial={{ scale: 0.5, rotate: -10 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0.5, rotate: 10 }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
+              >
+                <Lottie
+                  animationData={tractor}
+                  style={{
+                    width: 300,
+                    height: 300,
+                    filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.2))",
+                  }}
+                  loop
+                />
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* actual stages */}
+        {/* Actual stage components */}
         <AnimatePresence mode="wait">
           {stage === "HARVEST" && !showFx && (
             <motion.div
@@ -83,6 +94,7 @@ export default function TransportLifeCycle() {
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.5 }}
             >
               <HarvestForm onHarvestComplete={handleHarvestComplete} />
             </motion.div>
@@ -94,6 +106,7 @@ export default function TransportLifeCycle() {
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.5 }}
             >
               <TransportForm
                 appleId={appleId}
@@ -108,6 +121,7 @@ export default function TransportLifeCycle() {
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.5 }}
             >
               <StorageMonitor
                 appleId={appleId}
@@ -119,7 +133,12 @@ export default function TransportLifeCycle() {
           )}
 
           {stage === "DONE" && !showFx && (
-            <motion.div key="done">
+            <motion.div
+              key="done"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+            >
               <div className="text-center py-12">
                 <h2 className="text-2xl font-bold text-green-600 mb-4">
                   🎉 Lifecycle Complete!

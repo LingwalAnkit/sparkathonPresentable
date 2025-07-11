@@ -7,7 +7,7 @@ import {
   startTransportJourney,
   resetTransportJourney,
   calculateJourneyMetrics,
-} from "../../../../../utils/transitDataGenerator";
+} from "../../../../utils/transitDataGenerator";
 
 export function useTransportData() {
   const [journeyInfo, setJourneyInfo] = useState(null);

@@ -9,26 +9,27 @@ const TRANSPORT_STATES = {
   UNLOADING: "unloading",
 };
 
+// Realistic profiles for apple transport with spoilage progression
 const STATE_PROFILES = {
   [TRANSPORT_STATES.LOADING]: {
-    temperature: { base: 22, variance: 2, trend: 0.1 },
-    ethylene: { base: 15, variance: 3, trend: 0.2 },
-    description: "Loading phase - moderate activity",
+    temperature: { base: 8, variance: 2, trend: 0.3 }, // Loading dock temperature
+    ethylene: { base: 0.1, variance: 0.05, trend: 0.02 }, // Initial low ethylene
+    description: "Loading phase - temperature rising from cold storage",
   },
   [TRANSPORT_STATES.HIGHWAY]: {
-    temperature: { base: 18, variance: 1, trend: -0.05 },
-    ethylene: { base: 12, variance: 2, trend: 0.1 },
-    description: "Highway transport - steady conditions",
+    temperature: { base: 6, variance: 1.5, trend: 0.1 }, // Better refrigeration on highway
+    ethylene: { base: 0.2, variance: 0.1, trend: 0.05 }, // Gradual ethylene increase
+    description: "Highway transport - steady refrigerated conditions",
   },
   [TRANSPORT_STATES.CITY_TRAFFIC]: {
-    temperature: { base: 24, variance: 3, trend: 0.15 },
-    ethylene: { base: 18, variance: 4, trend: 0.3 },
-    description: "City traffic - variable conditions",
+    temperature: { base: 12, variance: 3, trend: 0.4 }, // Poor refrigeration in traffic
+    ethylene: { base: 0.5, variance: 0.2, trend: 0.15 }, // Accelerated ethylene production
+    description: "City traffic - variable conditions, frequent stops",
   },
   [TRANSPORT_STATES.UNLOADING]: {
-    temperature: { base: 25, variance: 2, trend: 0.2 },
-    ethylene: { base: 20, variance: 3, trend: 0.4 },
-    description: "Unloading phase - final destination",
+    temperature: { base: 15, variance: 2, trend: 0.5 }, // Ambient temperature exposure
+    ethylene: { base: 1.0, variance: 0.3, trend: 0.25 }, // High ethylene production
+    description: "Unloading phase - exposure to ambient temperature",
   },
 };
 
@@ -43,20 +44,26 @@ class TransportJourney {
       TRANSPORT_STATES.CITY_TRAFFIC,
       TRANSPORT_STATES.UNLOADING,
     ];
+
     // Simulated journey: 2.5 - 4.5 hours
     this.journeyStartTime = this.generateRealisticStartTime();
     this.totalJourneyHours = 2.5 + Math.random() * 2;
     this.journeyEndTime =
       this.journeyStartTime + this.totalJourneyHours * 60 * 60 * 1000;
     this.simulationStart = Date.now();
+
+    // Start with optimal cold storage conditions
     this.previousValues = {
-      temperature: 20,
-      ethylene: 15,
+      temperature: 2.0, // Cold storage temperature
+      ethylene: 0.05, // Very low initial ethylene
     };
+
+    // Track cumulative spoilage factors
+    this.cumulativeEthylene = 0.05;
+    this.temperatureExposureTime = 0;
   }
 
   generateRealisticStartTime() {
-    // Simulate a morning start between 6-10am
     const now = new Date();
     const startHour = 6 + Math.random() * 4;
     const startMinute = Math.random() * 60;
@@ -88,13 +95,13 @@ class TransportJourney {
   }
 
   updateState() {
-    // Change state every reading (for 3 readings, cycle through 3-4 states)
-    if (this.readingCount > 0 && this.readingCount % 1 === 0) {
-      this.stateIndex = Math.min(
-        this.stateIndex + 1,
-        this.journeyStates.length - 1
-      );
-      this.currentState = this.journeyStates[this.stateIndex];
+    // Progress through states based on reading count
+    const stateTransitionPoints = [0, 3, 6, 9]; // Readings per state
+    for (let i = 0; i < stateTransitionPoints.length; i++) {
+      if (this.readingCount >= stateTransitionPoints[i]) {
+        this.stateIndex = i;
+        this.currentState = this.journeyStates[this.stateIndex];
+      }
     }
   }
 
@@ -102,20 +109,64 @@ class TransportJourney {
     this.updateState();
     const profile = STATE_PROFILES[this.currentState][sensorType];
     const { base, variance, trend } = profile;
-    const continuityFactor = 0.3;
-    const previousValue = this.previousValues[sensorType] || base;
-    let newValue =
-      base +
-      (Math.random() - 0.5) * variance * 2 +
-      trend * this.readingCount +
-      (previousValue - base) * continuityFactor;
+
     if (sensorType === "temperature") {
-      newValue = Math.max(10, Math.min(40, newValue));
+      // Temperature with realistic cold chain breaks
+      const continuityFactor = 0.4;
+      const previousValue = this.previousValues[sensorType];
+
+      let newValue =
+        base +
+        (Math.random() - 0.5) * variance * 2 +
+        trend * this.readingCount +
+        (previousValue - base) * continuityFactor;
+
+      // Realistic temperature bounds for apple transport
+      newValue = Math.max(0, Math.min(25, newValue));
+
+      // Track temperature abuse
+      if (newValue > 4) {
+        this.temperatureExposureTime++;
+      }
+
+      this.previousValues[sensorType] = newValue;
+      return newValue;
     } else if (sensorType === "ethylene") {
-      newValue = Math.max(5, Math.min(100, newValue));
+      // Ethylene - always increasing, accelerated by temperature abuse
+      const baseIncrease = trend * (this.readingCount + 1);
+      const temperatureAcceleration = this.temperatureExposureTime * 0.02;
+      const randomVariation = Math.random() * variance;
+
+      // Autocatalytic effect - ethylene production accelerates over time
+      const autocatalyticFactor = Math.pow(this.cumulativeEthylene, 0.3) * 0.1;
+
+      this.cumulativeEthylene +=
+        baseIncrease +
+        temperatureAcceleration +
+        randomVariation +
+        autocatalyticFactor;
+
+      // Ensure ethylene never decreases and stays within realistic bounds
+      this.cumulativeEthylene = Math.max(
+        0.05,
+        Math.min(50, this.cumulativeEthylene)
+      );
+
+      return this.cumulativeEthylene;
     }
-    this.previousValues[sensorType] = newValue;
-    return newValue;
+  }
+
+  getSpoilageLevel() {
+    // Calculate spoilage based on temperature exposure and ethylene levels
+    const tempFactor = this.temperatureExposureTime * 0.1;
+    const ethyleneFactor = this.cumulativeEthylene * 0.2;
+    const spoilageScore = tempFactor + ethyleneFactor;
+
+    if (spoilageScore < 1) return "Fresh";
+    if (spoilageScore < 3) return "Early Ripening";
+    if (spoilageScore < 6) return "Advanced Ripening";
+    if (spoilageScore < 10) return "Overripe";
+    return "Spoiled";
   }
 
   getJourneyInfo() {
@@ -126,6 +177,7 @@ class TransportJourney {
     const currentJourneyTime =
       this.journeyStartTime +
       this.totalJourneyHours * 60 * 60 * 1000 * journeyProgress;
+
     return {
       progress: progress.toFixed(1),
       actualElapsed: Math.floor(actualElapsed / 1000),
@@ -135,6 +187,9 @@ class TransportJourney {
       currentState: this.currentState,
       stateDescription: this.getStateDescription(),
       simulatedTimestamp: Math.floor(currentJourneyTime / 1000),
+      spoilageLevel: this.getSpoilageLevel(),
+      cumulativeEthylene: this.cumulativeEthylene.toFixed(3),
+      temperatureExposureTime: this.temperatureExposureTime,
     };
   }
 
@@ -143,17 +198,20 @@ class TransportJourney {
   }
 }
 
-// API
+// API Functions
 export function startTransportJourney() {
   journeyInstance = new TransportJourney();
   return journeyInstance;
 }
+
 export function getCurrentJourney() {
   return journeyInstance;
 }
+
 export function resetTransportJourney() {
   journeyInstance = null;
 }
+
 export function generateJourneyInfo() {
   if (!journeyInstance) {
     return {
@@ -165,21 +223,27 @@ export function generateJourneyInfo() {
       currentState: "loading",
       stateDescription: "Preparing for transport",
       simulatedTimestamp: Math.floor(Date.now() / 1000),
+      spoilageLevel: "Fresh",
+      cumulativeEthylene: "0.050",
+      temperatureExposureTime: 0,
     };
   }
   return journeyInstance.getJourneyInfo();
 }
+
 export function generateTransportTemperature() {
   if (!journeyInstance) journeyInstance = new TransportJourney();
   const temp = journeyInstance.generateReading("temperature");
   return temp.toFixed(1);
 }
+
 export function generateTransportEthylene() {
   if (!journeyInstance) journeyInstance = new TransportJourney();
   const ethylene = journeyInstance.generateReading("ethylene");
   journeyInstance.nextReading();
-  return Math.round(ethylene);
+  return ethylene.toFixed(3); // Return precise ethylene readings
 }
+
 export function generateGPSCoordinates() {
   const startLat = 28.6139 + (Math.random() - 0.5) * 0.1;
   const startLng = 77.209 + (Math.random() - 0.5) * 0.1;
@@ -190,6 +254,7 @@ export function generateGPSCoordinates() {
     `${endLat.toFixed(6)},${endLng.toFixed(6)}`,
   ];
 }
+
 export function getRealisticTimestamps() {
   if (!journeyInstance) {
     return {
@@ -205,6 +270,7 @@ export function getRealisticTimestamps() {
     endTimeFormatted: timestamps.endTimeFormatted,
   };
 }
+
 export function calculateJourneyMetrics() {
   if (!journeyInstance) return {};
   const journeyHours = journeyInstance.totalJourneyHours;
