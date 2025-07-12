@@ -17,7 +17,7 @@ import Lottie from "lottie-react";
 import farmAnimation from "../../../assets/lottie/farm.json";
 
 const CONTRACT = {
-  address: "0x83614Fb40F7532590752aD32e60050d661ceffE1",
+  address: "0x236bD8706661db41730C69BB628894E4bc7b040A",
   abi: AppleLifecycleABI.abi,
 };
 

@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 export default function SensorReadingsHistory({
   readings,
   isCollecting,
@@ -5,6 +7,13 @@ export default function SensorReadingsHistory({
   isWaitingForTx,
   status,
 }) {
+  // Auto-trigger submit when data collection is complete
+  useEffect(() => {
+    if (!isCollecting && readings.length > 0 && !isWaitingForTx) {
+      onSubmit();
+    }
+  }, [isCollecting, readings, isWaitingForTx, onSubmit]);
+
   return (
     <div className="bg-white shadow-md rounded-xl p-6 border mb-6">
       <h3 className="text-xl font-bold mb-4">📈 Sensor Readings History</h3>
@@ -25,7 +34,7 @@ export default function SensorReadingsHistory({
         </div>
       </div>
 
-      {/* Auto-submit button (shown when data collection is complete) */}
+      {/* Auto-submit button (visible, but not needed if auto triggered) */}
       {!isCollecting && readings.length > 0 && !isWaitingForTx && (
         <div className="mb-4">
           <button

@@ -11,7 +11,7 @@ import JourneyMetrics from "./components/journeyMetric";
 import SensorReadingsHistory from "./components/readingHistory";
 
 const CONTRACT = {
-  address: "0x83614Fb40F7532590752aD32e60050d661ceffE1",
+  address: "0x236bD8706661db41730C69BB628894E4bc7b040A",
   abi: AppleLifecycleABI.abi,
 };
 
@@ -94,12 +94,7 @@ export default function TransportForm({ appleId, onTransitComplete }) {
 
       setIsWaitingForTx(false);
       toast.success("✅ Transport data logged to blockchain!", { id: toastId });
-
-      setIsWaitingForTx(false);
-      toast.success("✅ Transport data logged to blockchain!", { id: toastId });
       setStatus("✅ Transport data successfully stored on blockchain");
-
-      await verifyTransportData();
 
       if (onTransitComplete) {
         setTimeout(() => onTransitComplete(), 1000);
@@ -108,24 +103,6 @@ export default function TransportForm({ appleId, onTransitComplete }) {
       setIsWaitingForTx(false);
       toast.error(error.shortMessage || error.message, { id: toastId });
       setStatus("❌ Failed to store transport data");
-    }
-  };
-
-  const verifyTransportData = async () => {
-    try {
-      const appleData = await publicClient.readContract({
-        ...CONTRACT,
-        functionName: "getApple",
-        args: [BigInt(appleId)],
-      });
-
-      if (appleData.transport && appleData.transport.temperatures.length > 0) {
-        toast.success("✅ Transport data verified on blockchain");
-      } else {
-        toast.error("❌ Transport data not found on blockchain");
-      }
-    } catch (error) {
-      console.error("❌ Error verifying transport data:", error);
     }
   };
 

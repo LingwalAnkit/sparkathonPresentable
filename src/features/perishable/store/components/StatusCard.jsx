@@ -1,4 +1,3 @@
-// components/StatusCard.jsx
 export default function StatusCard({
   status,
   isMonitoring,

@@ -6,6 +6,7 @@ import TransportForm from "../features/perishable/transit/transportForm";
 import StorageMonitor from "../features/perishable/store/store";
 import Lottie from "lottie-react";
 import tractor from "../assets/lottie/tractor.json";
+import toast from "react-hot-toast";
 
 export default function TransportLifeCycle() {
   const [appleId, setAppleId] = useState(null);
@@ -18,9 +19,20 @@ export default function TransportLifeCycle() {
     next("TRANSIT");
   };
 
-  const handleTransitComplete = () => {
+  const handleTransitComplete = async () => {
     console.log("🎯 handleTransitComplete called");
-    next("STORAGE");
+
+    setShowFx(true);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setStage("STORAGE");
+    } catch (error) {
+      console.error("Transition error:", error);
+      toast.error("Failed to transition to storage");
+    } finally {
+      setShowFx(false);
+    }
   };
 
   const handleStorageComplete = (route) => {

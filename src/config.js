@@ -8,6 +8,13 @@ export const config = createConfig({
   chains: [mainnet],
   connectors: [metaMask()],
   transports: {
-    [mainnet.id]: http(rpcURL),
+    [mainnet.id]: http(rpcURL, {
+      batch: true,
+      fetchOptions: {
+        timeout: 10000,
+      },
+      retryCount: 3,
+      retryDelay: 1000,
+    }),
   },
 });
