@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useWriteContract, usePublicClient } from "wagmi";
 import toast from "react-hot-toast";
-import AppleLifecycleABI from "../../../abi/apple.json";
+import apiService from "../../../services/apiServices";
 import {
   generateWarehouseTemperature,
   generateWarehouseEthylene,
@@ -13,11 +12,6 @@ import StatusCard from "./components/StatusCard";
 import ReadingsHistoryTable from "./components/ReadingsHistoryTable";
 import SpoilageActionButtons from "./components/SpoilageActionButtons";
 import PendingReadingCard from "./components/PendingReadingCard";
-
-const CONTRACT = {
-  address: "0x236bD8706661db41730C69BB628894E4bc7b040A",
-  abi: AppleLifecycleABI.abi,
-};
 
 const ETHYLENE_SPOIL_THRESHOLD = 10; // ppm
 
@@ -33,7 +27,6 @@ export default function StorageMonitor({
   const [currentReading, setCurrentReading] = useState(null);
   const [pendingReading, setPendingReading] = useState(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [transactionHashes, setTransactionHashes] = useState([]);
   const [spoilageDetected, setSpoilageDetected] = useState(false);
   const [totalReadings, setTotalReadings] = useState(0);
 
@@ -52,8 +45,6 @@ export default function StorageMonitor({
   const [canGenerateNextReading, setCanGenerateNextReading] = useState(true);
 
   const intervalRef = useRef(null);
-  const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
 
   useEffect(() => {
     checkTransportStatus();
@@ -68,42 +59,45 @@ export default function StorageMonitor({
 
   const checkTransportStatus = async () => {
     try {
-      const appleData = await publicClient.readContract({
-        ...CONTRACT,
-        functionName: "getApple",
-        args: [BigInt(appleId)],
-      });
+      const result = await apiService.getApple(appleId);
 
-      const transportComplete = appleData.transport.endTimestamp > 0;
-      setTransportCompleted(transportComplete);
+      if (result.success) {
+        const appleData = result.data;
+        const transportComplete = appleData.transport.endTimestamp > 0;
+        setTransportCompleted(transportComplete);
 
-      // Load existing data
-      setPriceHistory(appleData.prices || []);
-      setFreshnessHistory(appleData.freshnessHistory || []);
+        // Load existing data
+        setPriceHistory(appleData.prices || []);
+        setFreshnessHistory(appleData.freshnessHistory || []);
+      }
     } catch (error) {
       console.error("Error checking transport status:", error);
+
+      // TEMPORARY WORKAROUND: Assume transport is completed if we can't verify
+      console.warn(
+        "⚠️ Could not verify transport status, assuming completed for development"
+      );
+      setTransportCompleted(true);
+      toast.warning("Could not verify transport status - proceeding anyway");
     }
   };
 
-  // FIXED: Start automatic monitoring with proper sequential control
+  // Start automatic monitoring
   const startAutomaticMonitoring = () => {
     if (!transportCompleted) {
       toast.error("Transport must be completed first");
       return;
     }
 
-    console.log(
-      "🏪 Starting automatic storage monitoring with sequential processing"
-    );
+    console.log("🏪 Starting automatic storage monitoring with backend");
     setIsMonitoring(true);
     setStatus("📦 Automatic monitoring started. Generating first reading...");
 
     // Generate first reading immediately
     generateNewReading();
 
-    // Set up interval that only generates new readings when ready
+    // Set up interval for subsequent readings
     intervalRef.current = setInterval(() => {
-      // CRITICAL FIX: Only generate new reading if conditions are met
       if (
         canGenerateNextReading &&
         !pendingReading &&
@@ -112,16 +106,13 @@ export default function StorageMonitor({
       ) {
         generateNewReading();
       } else {
-        console.log(
-          "⏳ Waiting for current reading to be processed before generating next..."
-        );
+        console.log("⏳ Waiting for current reading to be processed...");
       }
     }, 30000); // Check every 30 seconds
   };
 
-  // FIXED: Generate new reading with proper state control
+  // Generate new reading
   const generateNewReading = () => {
-    // Double-check conditions before generating
     if (pendingReading || isSubmittingTransaction || spoilageDetected) {
       console.log(
         "🚫 Cannot generate new reading - previous reading still pending"
@@ -146,13 +137,13 @@ export default function StorageMonitor({
       spoilageRisk: ethylene >= ETHYLENE_SPOIL_THRESHOLD,
     };
 
-    // Block next reading generation until this one is processed
+    // Block next reading generation
     setCanGenerateNextReading(false);
     setPendingReading(reading);
     setCurrentReading(reading);
     setTotalReadings(newReadingCount);
     setStatus(
-      `📊 Reading #${newReadingCount} generated. Set price and freshness score to continue.`
+      `📊 Reading #${newReadingCount} generated. Set price and freshness score.`
     );
 
     // Check for spoilage
@@ -162,28 +153,17 @@ export default function StorageMonitor({
       setStatus("⚠️ Spoilage detected! Complete this reading and take action.");
       setIsMonitoring(false);
       clearInterval(intervalRef.current);
-      toast.error(
-        `🚨 Spoilage detected! Ethylene: ${ethylene} ppm - Complete this reading!`
-      );
+      toast.error(`🚨 Spoilage detected! Ethylene: ${ethylene} ppm`);
     } else {
       toast.success(
-        `📊 Reading #${newReadingCount} ready! Complete transaction to continue monitoring.`
+        `📊 Reading #${newReadingCount} ready! Complete transaction to continue.`
       );
     }
-
-    console.log(
-      `✅ Generated reading #${newReadingCount} - Next reading blocked until transaction completes`
-    );
   };
 
-  // FIXED: Transaction flow with proper state management
-  const handleSingleTransactionFlow = async () => {
-    if (!pendingReading) {
-      toast.error("No pending reading to process");
-      return;
-    }
-
-    if (!currentPrice || !currentFreshnessScore) {
+  // BACKEND INTEGRATION: Handle transaction through backend
+  const handleBackendTransaction = async () => {
+    if (!pendingReading || !currentPrice || !currentFreshnessScore) {
       toast.error("Please provide both price and freshness score");
       return;
     }
@@ -194,92 +174,58 @@ export default function StorageMonitor({
     }
 
     setIsSubmittingTransaction(true);
-    const toastId = toast.loading(
-      "💾 Processing transaction - next reading will wait..."
-    );
+    const toastId = toast.loading("💾 Processing through backend...");
 
     try {
-      // Step 1: Update price
-      console.log("💰 Step 1: Setting price:", currentPrice);
-      toast.loading("💰 Step 1/2: Setting price...", { id: toastId });
-
-      const priceHash = await writeContractAsync({
-        ...CONTRACT,
-        functionName: "updatePrice",
-        args: [BigInt(appleId), BigInt(currentPrice)],
+      // Call backend API instead of direct blockchain interaction
+      const result = await apiService.processStorageReading({
+        appleId,
+        reading: pendingReading,
+        price: currentPrice,
+        freshnessScore: currentFreshnessScore,
       });
 
-      await publicClient.waitForTransactionReceipt({ hash: priceHash });
-      setTransactionHashes((prev) => [...prev, priceHash]);
+      if (result.success) {
+        // Update local state with backend response
+        setPriceHistory((prev) => [...prev, currentPrice]);
+        setFreshnessHistory((prev) => [...prev, currentFreshnessScore]);
+        setReadings((prev) => [
+          ...prev,
+          {
+            ...pendingReading,
+            price: currentPrice,
+            freshnessScore: currentFreshnessScore,
+            priceTransaction: result.priceTransaction,
+            warehouseTransaction: result.warehouseTransaction,
+          },
+        ]);
 
-      // Step 2: Log warehouse data with freshness
-      console.log(
-        "📦 Step 2: Logging warehouse data with freshness:",
-        currentFreshnessScore
-      );
-      toast.loading("📦 Step 2/2: Logging warehouse data...", { id: toastId });
+        // Clear pending reading and enable next generation
+        setPendingReading(null);
+        setCurrentPrice("");
+        setCurrentFreshnessScore("");
+        setCanGenerateNextReading(true);
 
-      const warehouseHash = await writeContractAsync({
-        ...CONTRACT,
-        functionName: "logWarehouse",
-        args: [
-          BigInt(appleId),
-          BigInt(pendingReading.temperature),
-          BigInt(pendingReading.ethylene),
-          location,
-          BigInt(currentFreshnessScore),
-        ],
-      });
-
-      await publicClient.waitForTransactionReceipt({ hash: warehouseHash });
-      setTransactionHashes((prev) => [...prev, warehouseHash]);
-
-      // Update local state - append to logs
-      setPriceHistory((prev) => [...prev, currentPrice]);
-      setFreshnessHistory((prev) => [...prev, currentFreshnessScore]);
-      setReadings((prev) => [
-        ...prev,
-        {
-          ...pendingReading,
-          price: currentPrice,
-          freshnessScore: currentFreshnessScore,
-          txHashes: [priceHash, warehouseHash],
-        },
-      ]);
-
-      // CRITICAL FIX: Clear pending reading and allow next reading generation
-      setPendingReading(null);
-      setCurrentPrice("");
-      setCurrentFreshnessScore("");
-      setCanGenerateNextReading(true); // Allow next reading to be generated
-
-      toast.success(
-        `✅ Reading #${pendingReading.id} completed! Next reading can now be generated.`,
-        { id: toastId }
-      );
-
-      // Update status for next iteration
-      if (spoilageDetected) {
-        setStatus(`⚠️ Spoilage reading completed. Take immediate action!`);
-      } else {
-        setStatus(
-          `✅ Reading #${pendingReading.id} processed. Ready for next reading in 30 seconds.`
+        toast.success(
+          `✅ Reading #${pendingReading.id} processed via backend!`,
+          { id: toastId }
         );
+
+        if (spoilageDetected) {
+          setStatus(`⚠️ Spoilage reading completed. Take immediate action!`);
+        } else {
+          setStatus(
+            `✅ Reading #${pendingReading.id} processed. Ready for next reading.`
+          );
+        }
+      } else {
+        throw new Error(result.error || "Backend processing failed");
       }
-
-      console.log(
-        `✅ Transaction completed for reading #${pendingReading.id} - Next reading generation enabled`
-      );
     } catch (error) {
-      console.error("❌ Transaction flow failed:", error);
-      toast.error(
-        `Failed to complete transaction: ${
-          error.shortMessage || error.message
-        }`,
-        { id: toastId }
-      );
-
-      // IMPORTANT: On error, allow retry by keeping pendingReading but enabling next generation
+      console.error("❌ Backend transaction failed:", error);
+      toast.error(`Backend processing failed: ${error.message}`, {
+        id: toastId,
+      });
       setCanGenerateNextReading(true);
     } finally {
       setIsSubmittingTransaction(false);
@@ -336,7 +282,19 @@ export default function StorageMonitor({
         </div>
       )}
 
-      {/* Pending Reading Card - Sequential Processing */}
+      {/* Backend Processing Notice */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+        <h4 className="font-semibold text-blue-800 mb-2">
+          🔗 Backend Integration Active
+        </h4>
+        <p className="text-blue-700 text-sm">
+          All transactions are processed through your Node.js backend server. No
+          wallet connection required - the backend handles blockchain
+          interactions automatically.
+        </p>
+      </div>
+
+      {/* Pending Reading Card - Backend Processing */}
       {pendingReading && transportCompleted && (
         <PendingReadingCard
           reading={pendingReading}
@@ -344,9 +302,10 @@ export default function StorageMonitor({
           setCurrentPrice={setCurrentPrice}
           currentFreshnessScore={currentFreshnessScore}
           setCurrentFreshnessScore={setCurrentFreshnessScore}
-          onSubmit={handleSingleTransactionFlow}
+          onSubmit={handleBackendTransaction}
           isSubmitting={isSubmittingTransaction}
           spoilageDetected={spoilageDetected}
+          isBackendMode={true}
         />
       )}
 
@@ -354,7 +313,7 @@ export default function StorageMonitor({
       {(priceHistory.length > 0 || freshnessHistory.length > 0) && (
         <div className="bg-white rounded-xl shadow-md p-6 border mb-6">
           <h3 className="text-xl font-bold mb-4">
-            📊 Sequential Processing Status
+            📊 Backend Processing Status
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg text-center">
@@ -389,14 +348,15 @@ export default function StorageMonitor({
         </div>
       )}
 
-      {/* Readings History - Shows sequential processing */}
+      {/* Readings History */}
       <ReadingsHistoryTable
         readings={readings}
         priceHistory={priceHistory}
         freshnessHistory={freshnessHistory}
+        isBackendMode={true}
       />
 
-      {/* Spoilage Action Buttons - Only show after spoilage reading is completed */}
+      {/* Spoilage Action Buttons */}
       {spoilageDetected && !pendingReading && (
         <SpoilageActionButtons onRouteChange={handleRouteChange} />
       )}

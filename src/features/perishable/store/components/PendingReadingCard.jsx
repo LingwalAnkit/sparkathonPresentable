@@ -9,6 +9,7 @@ export default function PendingReadingCard({
   onSubmit,
   isSubmitting,
   spoilageDetected,
+  isBackendMode = false,
 }) {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -28,26 +29,29 @@ export default function PendingReadingCard({
           spoilageDetected ? "text-red-800" : "text-yellow-800"
         }`}
       >
-        {spoilageDetected ? "🚨" : "📊"} Reading #{reading.id} - Single
-        Transaction Flow
+        {spoilageDetected ? "🚨" : "📊"} Reading #{reading.id} - Backend
+        Processing
         {spoilageDetected && " (SPOILAGE DETECTED!)"}
       </h3>
 
-      {/* Flow Explanation */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-        <h4 className="font-semibold text-blue-800 mb-2">
-          📋 Transaction Flow
-        </h4>
-        <div className="text-sm text-blue-700">
-          <p>
-            <strong>Step 1:</strong> Reading generated →{" "}
-            <strong>Step 2:</strong> Set price & freshness →{" "}
-            <strong>Step 3:</strong> Single transaction execution →{" "}
-            <strong>Step 4:</strong> Data appended to logs →{" "}
-            <strong>Step 5:</strong> Repeat
-          </p>
+      {/* Backend Mode Indicator */}
+      {isBackendMode && (
+        <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4">
+          <h4 className="font-semibold text-blue-800 mb-2">
+            🔗 Backend Processing Mode
+          </h4>
+          <div className="text-sm text-blue-700">
+            <p>
+              <strong>Flow:</strong> Frontend → Node.js Backend → Blockchain →
+              Response
+            </p>
+            <p>
+              <strong>Benefits:</strong> No wallet required, automated gas
+              management, faster processing
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Spoilage Warning */}
       {spoilageDetected && (
@@ -155,10 +159,10 @@ export default function PendingReadingCard({
             }`}
           >
             {isSubmitting
-              ? "⏳ Processing Transaction Flow..."
+              ? "⏳ Processing via Backend..."
               : spoilageDetected
-              ? "🚨 Complete Final Reading & Append"
-              : "💾 Execute Single Transaction & Append to Logs"}
+              ? "🚨 Complete Final Reading (Backend)"
+              : "💾 Process via Backend"}
           </button>
         </div>
       </form>
@@ -169,16 +173,16 @@ export default function PendingReadingCard({
         }`}
       >
         <p>
-          <strong>Single Transaction Flow:</strong>
+          <strong>Backend Processing Flow:</strong>
         </p>
         <ul className="list-disc list-inside mt-2 space-y-1">
-          <li>Step 1: Updates price for this apple</li>
-          <li>Step 2: Logs warehouse reading with freshness score</li>
-          <li>Step 3: Appends data to blockchain logs</li>
-          <li>Step 4: Prepares for next reading generation</li>
+          <li>Frontend sends data to Node.js backend</li>
+          <li>Backend executes price update transaction</li>
+          <li>Backend executes warehouse logging transaction</li>
+          <li>Backend returns transaction results to frontend</li>
           {spoilageDetected && (
             <li className="font-semibold">
-              Step 5: Stops monitoring due to spoilage
+              Monitoring stops due to spoilage detection
             </li>
           )}
         </ul>

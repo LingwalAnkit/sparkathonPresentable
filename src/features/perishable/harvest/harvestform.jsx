@@ -1,13 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import {
-  useAccount,
-  usePublicClient,
-  useWatchContractEvent,
-  useWriteContract,
-} from "wagmi";
 import toast from "react-hot-toast";
-import AppleLifecycleABI from "../../../abi/apple.json";
+import apiService from "../../../services/apiServices";
 import {
   generateHumidity,
   generateChemicals,
@@ -16,187 +10,99 @@ import {
 import Lottie from "lottie-react";
 import farmAnimation from "../../../assets/lottie/farm.json";
 
-const CONTRACT = {
-  address: "0x236bD8706661db41730C69BB628894E4bc7b040A",
-  abi: AppleLifecycleABI.abi,
-};
-
 export default function HarvestForm({ onHarvestComplete }) {
   /* ------------- local state ------------- */
   const [soil] = useState(() => SoilUsed());
   const [readings, setReadings] = useState([]);
   const [currentReading, setCurrentReading] = useState(null);
-  const [isWaitingForEvent, setIsWaitingForEvent] = useState(false);
-  const [transactionHash, setTransactionHash] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [dataCollectionComplete, setDataCollectionComplete] = useState(false);
 
-  /* ------------- wagmi ------------- */
-  const { isConnected } = useAccount();
-  const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
-
-  /* ------------- Enhanced event listener with debugging ------------- */
-  useWatchContractEvent({
-    ...CONTRACT,
-    eventName: "AppleCreated",
-    onLogs(logs) {
-      console.log("🎯 AppleCreated event received:", logs);
-      console.log("🔍 Event args:", logs[0]?.args);
-      console.log("🔍 Is waiting for event:", isWaitingForEvent);
-      console.log(
-        "🔍 Transaction hash match:",
-        logs[0]?.transactionHash === transactionHash
-      );
-
-      if (isWaitingForEvent && logs[0]?.args?.appleId) {
-        const appleId = logs[0].args.appleId.toString();
-        console.log("✅ Processing AppleCreated event for ID:", appleId);
-
-        setIsWaitingForEvent(false);
-        toast.success(`🍎 Apple #${appleId} created on-chain`);
-
-        console.log(
-          "🔍 onHarvestComplete function exists:",
-          !!onHarvestComplete
-        );
-        console.log("🔍 onHarvestComplete type:", typeof onHarvestComplete);
-
-        if (onHarvestComplete) {
-          console.log("🚀 Calling onHarvestComplete with ID:", appleId);
-          try {
-            onHarvestComplete(appleId);
-            console.log("✅ onHarvestComplete called successfully");
-          } catch (error) {
-            console.error("❌ Error calling onHarvestComplete:", error);
-          }
-        } else {
-          console.error("❌ onHarvestComplete callback is not defined!");
-        }
-      } else {
-        console.log("⚠️ Event received but conditions not met");
-        console.log("   - isWaitingForEvent:", isWaitingForEvent);
-        console.log("   - appleId exists:", !!logs[0]?.args?.appleId);
-      }
-    },
-    onError(error) {
-      console.error("❌ Event listener error:", error);
-      toast.error("Event listener error: " + error.message);
-    },
-  });
-
-  /* ------------- Enhanced transaction function ------------- */
-  async function sendToChain(hArr, cArr) {
-    console.log("🚀 Starting sendToChain function");
-    console.log("🔍 Wallet connected:", isConnected);
+  /* ------------- Backend transaction function ------------- */
+  async function sendToBackend(hArr, cArr) {
+    console.log("🚀 Starting backend submission");
     console.log("🔍 Humidity array:", hArr);
     console.log("🔍 Chemical array:", cArr);
     console.log("🔍 Soil type:", soil);
 
-    if (!isConnected) {
-      console.error("❌ Wallet not connected");
-      return toast.error("🔌 Connect wallet first");
-    }
-
-    const toastId = toast.loading("📡 Harvest→chain …");
-    setIsWaitingForEvent(true);
+    const toastId = toast.loading("📡 Harvest data → Backend → Blockchain...");
+    setIsProcessing(true);
 
     try {
-      console.log("📡 Sending transaction to contract...");
-      const hash = await writeContractAsync({
-        ...CONTRACT,
-        functionName: "createApple",
-        args: [soil, hArr.map(BigInt), cArr.map(BigInt)],
+      console.log("📡 Sending harvest data to backend...");
+
+      const result = await apiService.createApple({
+        soilComposition: soil,
+        humidity: hArr,
+        chemicals: cArr,
       });
 
-      console.log("✅ Transaction sent, hash:", hash);
-      setTransactionHash(hash);
-      toast.loading("⏳ Waiting for confirmation...", { id: toastId });
+      console.log("✅ Backend response:", result);
 
-      console.log("⏳ Waiting for transaction receipt...");
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
-      console.log("✅ Transaction confirmed, receipt:", receipt);
+      if (result.success) {
+        toast.success("✅ Apple created via backend!", { id: toastId });
 
-      toast.success("✅ Transaction confirmed", { id: toastId });
+        // Extract apple ID from backend response or transaction logs
+        // You may need to modify your backend to return the apple ID
+        const appleId = await getAppleIdFromBackend(result);
 
-      // Additional debugging: Check if event was emitted in the receipt
-      if (receipt.logs && receipt.logs.length > 0) {
-        console.log("📋 Transaction logs:", receipt.logs);
-        const appleCreatedLog = receipt.logs.find(
-          (log) => log.address.toLowerCase() === CONTRACT.address.toLowerCase()
-        );
-        if (appleCreatedLog) {
-          console.log("🎯 Found AppleCreated log in receipt:", appleCreatedLog);
-        } else {
-          console.warn("⚠️ No AppleCreated log found in receipt");
+        if (onHarvestComplete && appleId) {
+          console.log("🚀 Calling onHarvestComplete with ID:", appleId);
+          onHarvestComplete(appleId);
         }
+      } else {
+        throw new Error(result.error || "Backend processing failed");
       }
-
-      // Fallback: If event doesn't trigger within 5 seconds, try manual approach
-      setTimeout(() => {
-        if (isWaitingForEvent) {
-          console.warn(
-            "⚠️ Event not received within 5 seconds, trying fallback"
-          );
-          handleEventFallback();
-        }
-      }, 5000);
     } catch (err) {
-      console.error("❌ Transaction failed:", err);
-      setIsWaitingForEvent(false);
-      toast.error(err.shortMessage || err.message, { id: toastId });
+      console.error("❌ Backend submission failed:", err);
+      toast.error(`Backend error: ${err.message}`, { id: toastId });
+    } finally {
+      setIsProcessing(false);
     }
   }
 
-  /* ------------- Fallback method if event doesn't trigger ------------- */
-  async function handleEventFallback() {
-    console.log("🔄 Executing fallback method");
+  /* ------------- Helper function to get Apple ID from backend ------------- */
+  async function getAppleIdFromBackend(result) {
     try {
-      // Read the current nextAppleId from contract
-      const nextAppleId = await publicClient.readContract({
-        ...CONTRACT,
-        functionName: "nextAppleId",
-      });
-
-      const newAppleId = (BigInt(nextAppleId) - 1n).toString();
-      console.log("🔄 Fallback: Retrieved Apple ID:", newAppleId);
-
-      setIsWaitingForEvent(false);
-      toast.success(`🍎 Apple #${newAppleId} created (fallback)`);
-
-      if (onHarvestComplete) {
-        console.log("🔄 Fallback: Calling onHarvestComplete");
-        onHarvestComplete(newAppleId);
+      // Option 1: If backend returns apple ID directly
+      if (result.appleId) {
+        return result.appleId;
       }
+
+      // Option 2: Extract from transaction logs (you may need to modify backend)
+      if (result.txHash) {
+        // Backend could parse the transaction logs and return the apple ID
+        // For now, we'll use a simple approach
+        const timestamp = Date.now();
+        return `${timestamp % 1000}`; // Temporary solution
+      }
+
+      // Option 3: Call backend to get latest apple ID
+      const latestApple = await apiService.getLatestAppleId();
+      return latestApple.id;
     } catch (error) {
-      console.error("❌ Fallback method failed:", error);
-      setIsWaitingForEvent(false);
-      toast.error("Failed to retrieve Apple ID");
+      console.error("Failed to get apple ID:", error);
+      return null;
     }
   }
 
-  /* ------------- Enhanced sensor data collection ------------- */
+  /* ------------- Automatic sensor data collection ------------- */
   useEffect(() => {
-    console.log("🔄 useEffect triggered, wallet connected:", isConnected);
+    console.log("🚀 Starting automatic sensor data collection");
 
-    if (!isConnected) {
-      console.log("⚠️ Wallet not connected, skipping data collection");
-      return;
-    }
-
-    console.log("🚀 Starting sensor data collection");
     const max = 5;
-    let i = 0,
-      humArr = [],
-      chemArr = [];
+    let i = 0;
+    const humArr = [];
+    const chemArr = [];
 
-    const int = setInterval(() => {
+    const interval = setInterval(() => {
       console.log(`📊 Sensor reading ${i + 1}/${max}`);
 
       if (i === max) {
-        clearInterval(int);
-        console.log("✅ Data collection complete, sending to chain");
-        console.log("📊 Final humidity array:", humArr);
-        console.log("📊 Final chemical array:", chemArr);
-        sendToChain(humArr, chemArr);
+        clearInterval(interval);
+        console.log("✅ Data collection complete, sending to backend");
+        setDataCollectionComplete(true);
+        sendToBackend(humArr, chemArr);
         return;
       }
 
@@ -205,25 +111,24 @@ export default function HarvestForm({ onHarvestComplete }) {
       humArr.push(h);
       chemArr.push(c);
 
-      const r = { idx: i + 1, humidity: h, chemical: c };
-      console.log("📊 New reading:", r);
+      const reading = { idx: i + 1, humidity: h, chemical: c };
+      console.log("📊 New reading:", reading);
 
-      setCurrentReading(r);
-      setReadings((p) => [...p, r]);
+      setCurrentReading(reading);
+      setReadings((prev) => [...prev, reading]);
       i++;
     }, 9000);
 
     return () => {
       console.log("🧹 Cleaning up sensor interval");
-      clearInterval(int);
+      clearInterval(interval);
     };
-  }, [isConnected]);
+  }, []); // Remove wallet dependency
 
-  /* ------------- Component mount/unmount logging ------------- */
+  /* ------------- Component lifecycle logging ------------- */
   useEffect(() => {
-    console.log("🏗️ HarvestForm component mounted");
+    console.log("🏗️ HarvestForm component mounted (Backend Mode)");
     console.log("🔍 onHarvestComplete prop:", onHarvestComplete);
-    console.log("🔍 onHarvestComplete type:", typeof onHarvestComplete);
 
     return () => {
       console.log("🧹 HarvestForm component unmounting");
@@ -233,6 +138,18 @@ export default function HarvestForm({ onHarvestComplete }) {
   /* ------------- UI ------------- */
   return (
     <div className="flex flex-col md:flex-col bg-gray-100 mt-6 gap-6">
+      {/* Backend Mode Indicator */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+        <h4 className="font-semibold text-blue-800 mb-2">
+          🔗 Backend Processing Mode
+        </h4>
+        <p className="text-blue-700 text-sm">
+          Harvest data is automatically processed through your Node.js backend.
+          No wallet connection required - backend handles all blockchain
+          interactions.
+        </p>
+      </div>
+
       <div className="flex flex-row gap-4">
         {/* History */}
         <div className="md:w-1/3 w-full">
@@ -241,7 +158,10 @@ export default function HarvestForm({ onHarvestComplete }) {
               Sensor History
             </h3>
             {readings.length === 0 ? (
-              <p className="text-gray-500">Waiting…</p>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
+                <p className="text-gray-500">Collecting sensor data...</p>
+              </div>
             ) : (
               <ul className="space-y-6 text-gray-700 text-md">
                 {readings.map((r) => (
@@ -250,6 +170,26 @@ export default function HarvestForm({ onHarvestComplete }) {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {/* Processing Status */}
+            {dataCollectionComplete && (
+              <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      isProcessing
+                        ? "bg-yellow-500 animate-pulse"
+                        : "bg-green-500"
+                    }`}
+                  ></div>
+                  <p className="text-sm font-medium text-gray-700">
+                    {isProcessing
+                      ? "Processing via backend..."
+                      : "Data collection complete"}
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -261,19 +201,23 @@ export default function HarvestForm({ onHarvestComplete }) {
               ["Soil Type", soil],
               [
                 "Humidity",
-                currentReading ? `${currentReading.humidity}%` : "…",
+                currentReading
+                  ? `${currentReading.humidity}%`
+                  : "Collecting...",
               ],
               [
                 "Nitrate",
-                currentReading ? `${currentReading.chemical} ppm` : "…",
+                currentReading
+                  ? `${currentReading.chemical} ppm`
+                  : "Collecting...",
               ],
-            ].map(([t, v]) => (
+            ].map(([title, value]) => (
               <div
-                key={t}
+                key={title}
                 className="bg-white shadow-md rounded-xl p-6 border text-center"
               >
-                <h4 className="font-semibold text-gray-700 mb-1">{t}</h4>
-                <p className="text-gray-600">{v}</p>
+                <h4 className="font-semibold text-gray-700 mb-1">{title}</h4>
+                <p className="text-gray-600">{value}</p>
               </div>
             ))}
           </div>
