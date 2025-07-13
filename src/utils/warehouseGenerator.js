@@ -5,13 +5,10 @@ export function generateWarehouseTemperature() {
 }
 
 export function generateWarehouseEthylene(prevEthylene = 3) {
-  // Cap at 10 ppm (spoiled)
   if (prevEthylene >= 10) return 10.0;
 
-  // Increase by at least 0.8 up to 1.2 (optional variation)
-  const increase = Math.random() * (1.2 - 0.8) + 0.8;
+  const increase = Math.random() * (1.5 - 1.0) + 1.0; // bigger minimum step
   const nextEthylene = prevEthylene + increase;
 
-  // Clamp to max 10 and round
   return parseFloat(Math.min(nextEthylene, 10).toFixed(2));
 }

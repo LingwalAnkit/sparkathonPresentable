@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function SensorReadingsHistory({
   readings,
@@ -7,12 +7,28 @@ export default function SensorReadingsHistory({
   isWaitingForTx,
   status,
 }) {
-  // Auto-trigger submit when data collection is complete
+  const [hasTriggeredSubmit, setHasTriggeredSubmit] = useState(false);
+
   useEffect(() => {
-    if (!isCollecting && readings.length > 0 && !isWaitingForTx) {
+    // Only trigger once when collection completes
+    if (
+      !isCollecting &&
+      readings.length > 0 &&
+      !isWaitingForTx &&
+      !hasTriggeredSubmit
+    ) {
+      console.log("📡 SensorReadingsHistory triggering auto-submit");
+      setHasTriggeredSubmit(true);
       onSubmit();
     }
-  }, [isCollecting, readings, isWaitingForTx, onSubmit]);
+  }, [isCollecting, readings, isWaitingForTx, onSubmit, hasTriggeredSubmit]);
+
+  // Reset trigger when new monitoring starts
+  useEffect(() => {
+    if (isCollecting) {
+      setHasTriggeredSubmit(false);
+    }
+  }, [isCollecting]);
 
   return (
     <div className="bg-white shadow-md rounded-xl p-6 border mb-6">

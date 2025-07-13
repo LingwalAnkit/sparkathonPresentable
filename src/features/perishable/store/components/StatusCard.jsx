@@ -1,17 +1,26 @@
+// components/StatusCard.jsx
 export default function StatusCard({
   status,
   isMonitoring,
   spoilageDetected,
   currentReading,
   ethyleneThreshold,
+  pendingReading,
+  isSubmittingTransaction,
 }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 border mb-6">
-      <h2 className="text-xl font-semibold mb-4">🏪 Storage Monitoring</h2>
+      <h2 className="text-xl font-semibold mb-4">
+        🏪 Sequential Storage Monitoring
+      </h2>
+
+      {/* Status Indicator */}
       <div className="flex items-center space-x-2 mb-4">
         <div
           className={`w-3 h-3 rounded-full ${
-            isMonitoring
+            isSubmittingTransaction
+              ? "bg-yellow-500 animate-pulse"
+              : isMonitoring
               ? "bg-green-500 animate-pulse"
               : spoilageDetected
               ? "bg-red-500"
@@ -27,6 +36,44 @@ export default function StatusCard({
         </p>
       </div>
 
+      {/* Processing Status */}
+      <div className="bg-blue-50 rounded-lg p-4 mb-4">
+        <h4 className="font-semibold text-blue-800 mb-2">
+          📋 Processing Status
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="text-center">
+            <p className="text-gray-600">Pending Reading</p>
+            <p className="font-bold text-blue-600">
+              {pendingReading ? `#${pendingReading.id}` : "None"}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-600">Transaction Status</p>
+            <p
+              className={`font-bold ${
+                isSubmittingTransaction ? "text-yellow-600" : "text-green-600"
+              }`}
+            >
+              {isSubmittingTransaction ? "Processing..." : "Ready"}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-600">Next Reading</p>
+            <p
+              className={`font-bold ${
+                pendingReading || isSubmittingTransaction
+                  ? "text-red-600"
+                  : "text-green-600"
+              }`}
+            >
+              {pendingReading || isSubmittingTransaction ? "Blocked" : "Ready"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Current Reading Display */}
       {currentReading && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="bg-blue-50 rounded-lg p-4 text-center">

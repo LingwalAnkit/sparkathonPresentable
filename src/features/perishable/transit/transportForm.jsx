@@ -17,6 +17,7 @@ const CONTRACT = {
 
 export default function TransportForm({ appleId, onTransitComplete }) {
   const [isWaitingForTx, setIsWaitingForTx] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false); // Add this guard
   const [status, setStatus] = useState("Initializing transport monitoring...");
 
   const { writeContractAsync } = useWriteContract();
@@ -42,21 +43,19 @@ export default function TransportForm({ appleId, onTransitComplete }) {
       return;
     }
 
-    // Auto-start journey and handle auto-submission
-    const cleanup = startJourney(() => {
-      // This callback will be called when data collection is complete
-      setStatus(
-        "📝 Data collection complete. Auto-submitting to blockchain..."
-      );
-      setTimeout(() => {
-        submitToChain();
-      }, 1500);
-    });
-
+    // Remove the callback parameter - let SensorReadingsHistory handle auto-submit
+    const cleanup = startJourney();
     return cleanup;
   }, [appleId]);
 
   const submitToChain = async () => {
+    // Prevent double submission
+    if (hasSubmitted || isWaitingForTx) {
+      console.log("🚫 Submission blocked - already processing or completed");
+      return;
+    }
+
+    setHasSubmitted(true); // Set guard immediately
     const toastId = toast.loading("🚛 Transport→chain …");
     setIsWaitingForTx(true);
     setStatus("📡 Sending transport data to blockchain...");
@@ -79,15 +78,6 @@ export default function TransportForm({ appleId, onTransitComplete }) {
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
-      // Use the receipt for validation
-      console.log("✅ Transaction confirmed:", {
-        status: receipt.status, // 1 = success, 0 = failure
-        gasUsed: receipt.gasUsed.toString(),
-        blockNumber: receipt.blockNumber.toString(),
-        logs: receipt.logs.length,
-      });
-
-      // Check if transaction actually succeeded
       if (receipt.status === 0) {
         throw new Error("Transaction failed on blockchain");
       }
@@ -101,6 +91,7 @@ export default function TransportForm({ appleId, onTransitComplete }) {
       }
     } catch (error) {
       setIsWaitingForTx(false);
+      setHasSubmitted(false); // Reset guard on error to allow retry
       toast.error(error.shortMessage || error.message, { id: toastId });
       setStatus("❌ Failed to store transport data");
     }
