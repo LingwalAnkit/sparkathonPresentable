@@ -2,10 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import apiService from "../../../services/apiServices";
-import {
-  generateWarehouseTemperature,
-  generateWarehouseEthylene,
-} from "../../../utils/warehouseGenerator";
+import { generateWarehouseTemperature } from "../../../utils/warehouseGenerator";
 
 // Import components
 import StatusCard from "./components/StatusCard";
@@ -124,7 +121,10 @@ export default function StorageMonitor({
     setReadingCount(newReadingCount);
 
     const temp = parseInt(generateWarehouseTemperature());
-    const ethylene = parseInt(generateWarehouseEthylene());
+
+    // Pass the previous ethylene reading to get progressive increase
+    const ethylene = Math.min(3 + newReadingCount, 10);
+
     const timestamp = Math.floor(Date.now() / 1000);
 
     const reading = {
@@ -137,7 +137,7 @@ export default function StorageMonitor({
       spoilageRisk: ethylene >= ETHYLENE_SPOIL_THRESHOLD,
     };
 
-    // Block next reading generation
+    // Rest of your existing code...
     setCanGenerateNextReading(false);
     setPendingReading(reading);
     setCurrentReading(reading);

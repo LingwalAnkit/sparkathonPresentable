@@ -5,10 +5,8 @@ export function generateWarehouseTemperature() {
 }
 
 export function generateWarehouseEthylene(prevEthylene = 3) {
-  if (prevEthylene >= 10) return 10.0;
-
-  const increase = Math.random() * (1.5 - 1.0) + 1.0; // bigger minimum step
-  const nextEthylene = prevEthylene + increase;
-
-  return parseFloat(Math.min(nextEthylene, 10).toFixed(2));
+  if (prevEthylene >= 10) {
+    return 10;
+  }
+  return prevEthylene + 1;
 }
