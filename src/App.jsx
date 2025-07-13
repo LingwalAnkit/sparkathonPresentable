@@ -8,6 +8,7 @@ import Electronics from "./page/electronics";
 import AdminNavbar from "./components/layout/adminNav";
 import { Toaster } from "react-hot-toast";
 import Data from "./page/data";
+import AppleList from "./page/goodsDisplayList";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ export default function App() {
                   />{" "}
                   <Route path="/electronics" element={<Electronics />} />
                   <Route path="/data" element={<Data />} />
+                  <Route path="/apples" element={<AppleList></AppleList>} />
                 </Routes>
               </main>
             </div>
