@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { fetchApples } from "../services/displayService";
+import { useEffect, useState } from "react";
+import displayService from "../services/displayService";
 
 export default function AppleList() {
   const [apples, setApples] = useState([]);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    fetchApples().then(setApples).catch(console.error);
+    displayService.subscribeToAppleUpdates((data) => {
+      console.log("New apple data received:", data);
+      setApples(data);
+    });
+
+    return () => {
+      displayService.unsubscribeFromAppleUpdates();
+    };
   }, []);
 
   return (
@@ -28,7 +35,7 @@ export default function AppleList() {
               className="w-full h-40 object-cover rounded-xl mb-3"
             />
             <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=Apple%20ID%3A%20"
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=Apple%20ID%3A%20${apple.appleId}`}
               alt="QR"
               className="w-20 h-20 mx-auto mb-2"
             />

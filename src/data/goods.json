@@ -1,0 +1,72 @@
+[
+    {
+        "id": 1,
+        "name": "Organic Apples",
+        "description": "Fresh & Crispy",
+        "image": "🍎",
+        "price": 45
+    },
+    {
+        "id": 2,
+        "name": "Fresh Milk",
+        "description": "Pure & Creamy",
+        "image": "🥛",
+        "price": 28
+    },
+    {
+        "id": 3,
+        "name": "Whole Wheat Bread",
+        "description": "Soft & Nutritious",
+        "image": "🍞",
+        "price": 35
+    },
+    {
+        "id": 4,
+        "name": "Baby Spinach",
+        "description": "Fresh & Tender",
+        "image": "🥬",
+        "price": 22
+    },
+    {
+        "id": 5,
+        "name": "Greek Yogurt",
+        "description": "Thick & Creamy",
+        "image": "🥛",
+        "price": 18
+    },
+    {
+        "id": 6,
+        "name": "Chicken Breast",
+        "description": "Fresh & Tender",
+        "image": "🍗",
+        "price": 125
+    },
+    {
+        "id": 7,
+        "name": "Strawberries",
+        "description": "Sweet & Juicy",
+        "image": "🍓",
+        "price": 62
+    },
+    {
+        "id": 8,
+        "name": "Salmon Fillets",
+        "description": "Fresh & Premium",
+        "image": "🐟",
+        "price": 249
+    },
+    {
+        "id": 9,
+        "name": "Bananas",
+        "description": "Sweet & Ripe",
+        "image": "🍌",
+        "price": 21
+    },
+    {
+        "id": 10,
+        "name": "Cheddar Cheese",
+        "description": "Sharp & Aged",
+        "image": "🧀",
+        "price": 157
+    }
+]

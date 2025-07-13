@@ -7,6 +7,8 @@ import TransportLifeCycle from "./page/perishableHarvest"; // new: 1 file = whol
 import Electronics from "./page/electronics";
 import AdminNavbar from "./components/layout/adminNav";
 import { Toaster } from "react-hot-toast";
+import AppleDataDisplay from "./page/data";
+import ProductSlider from "./page/goods";
 import Data from "./page/data";
 import AppleList from "./page/goodsDisplayList";
 
@@ -33,9 +35,11 @@ export default function App() {
                     path="/perishable"
                     element={<TransportLifeCycle />}
                   />{" "}
+                  {/* NEW */}
                   <Route path="/electronics" element={<Electronics />} />
-                  <Route path="/data" element={<Data />} />
-                  <Route path="/apples" element={<AppleList></AppleList>} />
+                  <Route path="/data" element={<AppleDataDisplay />} />
+                  <Route path="/goods" element={<ProductSlider />} />
+                  <Route path="/apples" element={<AppleList />} />
                 </Routes>
               </main>
             </div>
