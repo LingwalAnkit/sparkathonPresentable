@@ -22,6 +22,7 @@ export function useTransportData() {
   const [journeyMetrics, setJourneyMetrics] = useState(null);
 
   const startJourney = () => {
+    // Remove callback parameter
     resetTransportJourney();
     const info = startTransportJourney();
 
@@ -51,9 +52,9 @@ export function useTransportData() {
 
         setTemps(tArr);
         setEthy(eArr);
-        setIsCollecting(false);
+        setIsCollecting(false); // This triggers SensorReadingsHistory auto-submit
         setJourneyMetrics(calculateJourneyMetrics());
-        return;
+        return; // Remove callback execution
       }
 
       const t = parseFloat(generateTransportTemperature());

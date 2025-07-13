@@ -9,6 +9,8 @@ import AdminNavbar from "./components/layout/adminNav";
 import { Toaster } from "react-hot-toast";
 import AppleDataDisplay from "./page/data";
 import ProductSlider from "./page/goods";
+import Data from "./page/data";
+import AppleList from "./page/goodsDisplayList";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +39,7 @@ export default function App() {
                   <Route path="/electronics" element={<Electronics />} />
                   <Route path="/data" element={<AppleDataDisplay />} />
                   <Route path="/goods" element={<ProductSlider />} />
+                  <Route path="/apples" element={<AppleList />} />
                 </Routes>
               </main>
             </div>
