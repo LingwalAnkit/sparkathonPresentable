@@ -12,13 +12,23 @@ import PendingReadingCard from "./components/PendingReadingCard";
 
 const ETHYLENE_SPOIL_THRESHOLD = 10; // ppm
 
+// Stateless ethylene generator function
+function generateIncreasingEthylene(
+  readingNumber,
+  startValue = 3,
+  maxValue = 10
+) {
+  const ethylene = Math.min(startValue + readingNumber, maxValue);
+  return ethylene;
+}
+
 export default function StorageMonitor({
   appleId,
   state = "WAREHOUSE",
   location = "Main Warehouse",
   onRouteChange,
 }) {
-  // State management
+  // Essential state management only
   const [readings, setReadings] = useState([]);
   const [status, setStatus] = useState("🚀 Starting automatic monitoring...");
   const [currentReading, setCurrentReading] = useState(null);
@@ -32,61 +42,23 @@ export default function StorageMonitor({
   const [currentFreshnessScore, setCurrentFreshnessScore] = useState("");
   const [isSubmittingTransaction, setIsSubmittingTransaction] = useState(false);
 
-  // History tracking
-  const [priceHistory, setPriceHistory] = useState([]);
-  const [freshnessHistory, setFreshnessHistory] = useState([]);
-  const [transportCompleted, setTransportCompleted] = useState(false);
-
   // Reading generation control
   const [readingCount, setReadingCount] = useState(0);
   const [canGenerateNextReading, setCanGenerateNextReading] = useState(true);
 
   const intervalRef = useRef(null);
 
+  // Start monitoring immediately when component mounts
   useEffect(() => {
-    checkTransportStatus();
-  }, [appleId]);
-
-  // Auto-start monitoring when component mounts
-  useEffect(() => {
-    if (appleId && transportCompleted) {
+    if (appleId) {
+      console.log("🚀 Starting monitoring directly - bypassing all checks");
       startAutomaticMonitoring();
     }
-  }, [appleId, transportCompleted]);
+  }, [appleId]);
 
-  const checkTransportStatus = async () => {
-    try {
-      const result = await apiService.getApple(appleId);
-
-      if (result.success) {
-        const appleData = result.data;
-        const transportComplete = appleData.transport.endTimestamp > 0;
-        setTransportCompleted(transportComplete);
-
-        // Load existing data
-        setPriceHistory(appleData.prices || []);
-        setFreshnessHistory(appleData.freshnessHistory || []);
-      }
-    } catch (error) {
-      console.error("Error checking transport status:", error);
-
-      // TEMPORARY WORKAROUND: Assume transport is completed if we can't verify
-      console.warn(
-        "⚠️ Could not verify transport status, assuming completed for development"
-      );
-      setTransportCompleted(true);
-      toast.warning("Could not verify transport status - proceeding anyway");
-    }
-  };
-
-  // Start automatic monitoring
+  // Start automatic monitoring - no checks
   const startAutomaticMonitoring = () => {
-    if (!transportCompleted) {
-      toast.error("Transport must be completed first");
-      return;
-    }
-
-    console.log("🏪 Starting automatic storage monitoring with backend");
+    console.log("🏪 Starting automatic storage monitoring - checks bypassed");
     setIsMonitoring(true);
     setStatus("📦 Automatic monitoring started. Generating first reading...");
 
@@ -108,7 +80,7 @@ export default function StorageMonitor({
     }, 30000); // Check every 30 seconds
   };
 
-  // Generate new reading
+  // Generate new reading with stateless ethylene progression
   const generateNewReading = () => {
     if (pendingReading || isSubmittingTransaction || spoilageDetected) {
       console.log(
@@ -122,8 +94,10 @@ export default function StorageMonitor({
 
     const temp = parseInt(generateWarehouseTemperature());
 
-    // Pass the previous ethylene reading to get progressive increase
-    const ethylene = Math.min(3 + newReadingCount, 10);
+    // Use stateless ethylene generator - no state management issues
+    const ethylene = generateIncreasingEthylene(newReadingCount);
+
+    console.log(`🔍 Reading #${newReadingCount}: Ethylene = ${ethylene}`);
 
     const timestamp = Math.floor(Date.now() / 1000);
 
@@ -137,7 +111,6 @@ export default function StorageMonitor({
       spoilageRisk: ethylene >= ETHYLENE_SPOIL_THRESHOLD,
     };
 
-    // Rest of your existing code...
     setCanGenerateNextReading(false);
     setPendingReading(reading);
     setCurrentReading(reading);
@@ -161,7 +134,7 @@ export default function StorageMonitor({
     }
   };
 
-  // BACKEND INTEGRATION: Handle transaction through backend
+  // Backend transaction handler
   const handleBackendTransaction = async () => {
     if (!pendingReading || !currentPrice || !currentFreshnessScore) {
       toast.error("Please provide both price and freshness score");
@@ -177,7 +150,7 @@ export default function StorageMonitor({
     const toastId = toast.loading("💾 Processing through backend...");
 
     try {
-      // Call backend API instead of direct blockchain interaction
+      // Call backend API
       const result = await apiService.processStorageReading({
         appleId,
         reading: pendingReading,
@@ -186,9 +159,7 @@ export default function StorageMonitor({
       });
 
       if (result.success) {
-        // Update local state with backend response
-        setPriceHistory((prev) => [...prev, currentPrice]);
-        setFreshnessHistory((prev) => [...prev, currentFreshnessScore]);
+        // Update readings array
         setReadings((prev) => [
           ...prev,
           {
@@ -270,32 +241,20 @@ export default function StorageMonitor({
         isSubmittingTransaction={isSubmittingTransaction}
       />
 
-      {/* Transport Status Check */}
-      {!transportCompleted && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
-          <h3 className="text-xl font-bold text-red-800 mb-4">
-            ❌ Transport Required
-          </h3>
-          <p className="text-red-700">
-            Transport must be completed before storage monitoring can begin.
-          </p>
-        </div>
-      )}
-
       {/* Backend Processing Notice */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
         <h4 className="font-semibold text-blue-800 mb-2">
-          🔗 Backend Integration Active
+          🔗 Backend Integration Active (Checks Bypassed)
         </h4>
         <p className="text-blue-700 text-sm">
-          All transactions are processed through your Node.js backend server. No
-          wallet connection required - the backend handles blockchain
-          interactions automatically.
+          All transactions are processed through your Node.js backend server.
+          Transport and apple validation checks have been bypassed for
+          development.
         </p>
       </div>
 
-      {/* Pending Reading Card - Backend Processing */}
-      {pendingReading && transportCompleted && (
+      {/* Pending Reading Card */}
+      {pendingReading && (
         <PendingReadingCard
           reading={pendingReading}
           currentPrice={currentPrice}
@@ -310,7 +269,7 @@ export default function StorageMonitor({
       )}
 
       {/* Current Status Display */}
-      {(priceHistory.length > 0 || freshnessHistory.length > 0) && (
+      {readings.length > 0 && (
         <div className="bg-white rounded-xl shadow-md p-6 border mb-6">
           <h3 className="text-xl font-bold mb-4">
             📊 Backend Processing Status
@@ -328,22 +287,22 @@ export default function StorageMonitor({
                 {pendingReading ? `#${pendingReading.id}` : "None"}
               </p>
             </div>
-            {priceHistory.length > 0 && (
-              <div className="bg-green-50 p-4 rounded-lg text-center">
-                <p className="text-sm text-gray-600">Latest Price</p>
-                <p className="text-xl font-bold text-green-600">
-                  {priceHistory[priceHistory.length - 1]} wei
-                </p>
-              </div>
-            )}
-            {freshnessHistory.length > 0 && (
-              <div className="bg-purple-50 p-4 rounded-lg text-center">
-                <p className="text-sm text-gray-600">Latest Freshness</p>
-                <p className="text-xl font-bold text-purple-600">
-                  {freshnessHistory[freshnessHistory.length - 1]}/100
-                </p>
-              </div>
-            )}
+            <div className="bg-green-50 p-4 rounded-lg text-center">
+              <p className="text-sm text-gray-600">Latest Price</p>
+              <p className="text-xl font-bold text-green-600">
+                {readings.length > 0
+                  ? `${readings[readings.length - 1].price} wei`
+                  : "None"}
+              </p>
+            </div>
+            <div className="bg-purple-50 p-4 rounded-lg text-center">
+              <p className="text-sm text-gray-600">Latest Freshness</p>
+              <p className="text-xl font-bold text-purple-600">
+                {readings.length > 0
+                  ? `${readings[readings.length - 1].freshnessScore}/100`
+                  : "None"}
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -351,8 +310,8 @@ export default function StorageMonitor({
       {/* Readings History */}
       <ReadingsHistoryTable
         readings={readings}
-        priceHistory={priceHistory}
-        freshnessHistory={freshnessHistory}
+        priceHistory={readings.map((r) => r.price)}
+        freshnessHistory={readings.map((r) => r.freshnessScore)}
         isBackendMode={true}
       />
 

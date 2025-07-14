@@ -4,9 +4,12 @@ export function generateWarehouseTemperature() {
   return parseFloat(temperature.toFixed(2));
 }
 
-export function generateWarehouseEthylene(prevEthylene = 3) {
-  if (prevEthylene >= 10) {
-    return 10;
-  }
-  return prevEthylene + 1;
+export function generateIncreasingEthylene(
+  readingNumber,
+  startValue = 3,
+  maxValue = 10
+) {
+  // Simple approach: start + reading number, capped at max
+  const ethylene = Math.min(startValue + readingNumber, maxValue);
+  return ethylene;
 }
