@@ -1,9 +1,14 @@
+import { Timer } from "lucide-react";
+
 export default function TransportTimeline({ startT, endT }) {
   if (!startT && !endT) return null;
 
   return (
     <div className="bg-white shadow-md rounded-xl p-6 border mb-6 w-1/2">
-      <h3 className="text-xl font-bold mb-4">⏱️ Transport Timeline</h3>
+      <h3 className="flex items-center gap-2 text-xl font-bold mb-4">
+        <Timer className="w-5 h-5 text-blue-600" />
+        Transport Timeline
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <p className="text-sm text-gray-600">Journey Started:</p>

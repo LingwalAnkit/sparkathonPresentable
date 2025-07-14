@@ -1,9 +1,15 @@
+import { BarChart3 } from "lucide-react";
+
 export default function JourneyMetrics({ metrics }) {
   if (!metrics) return null;
 
   return (
     <div className="bg-white shadow-md rounded-xl p-6 border mb-6">
-      <h3 className="text-xl font-bold mb-4">📊 Journey Analytics</h3>
+      <div className="flex items-center  mb-4 gap-2">
+        <BarChart3 />
+        <span className="text-xl font-bold">Journey Analytics</span>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="text-center">
           <p className="text-sm text-gray-600">Total Time</p>

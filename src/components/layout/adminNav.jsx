@@ -6,7 +6,7 @@ function AdminNavbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="bg-white shadow-md px-6 py-4 flex items-center justify-between">
+    <nav className="bg-gray-100 shadow-md px-6 py-4 flex items-center justify-between rounded-2xl ">
       {/* Logo */}
       <div className="text-2xl font-bold text-blue-600">AdminPanel</div>
 

@@ -1,4 +1,14 @@
-// components/PendingReadingCard.jsx
+import {
+  AlertTriangle,
+  BarChartHorizontal,
+  Thermometer,
+  Activity,
+  MapPin,
+  Clock,
+  Sparkles,
+  Loader,
+  Database,
+} from "lucide-react";
 
 export default function PendingReadingCard({
   reading,
@@ -25,22 +35,26 @@ export default function PendingReadingCard({
       }`}
     >
       <h3
-        className={`text-xl font-bold mb-4 ${
+        className={`flex items-center gap-2 text-xl font-bold mb-4 ${
           spoilageDetected ? "text-red-800" : "text-yellow-800"
         }`}
       >
-        {spoilageDetected ? "🚨" : "📊"} Reading #{reading.id} - Backend
-        Processing
+        {spoilageDetected ? (
+          <AlertTriangle className="w-5 h-5 text-red-700" />
+        ) : (
+          <BarChartHorizontal className="w-5 h-5 text-yellow-700" />
+        )}
+        Reading #{reading.id} - Backend Processing
         {spoilageDetected && " (SPOILAGE DETECTED!)"}
       </h3>
 
       {/* Backend Mode Indicator */}
       {isBackendMode && (
         <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4">
-          <h4 className="font-semibold text-blue-800 mb-2">
-            🔗 Backend Processing Mode
+          <h4 className="font-semibold text-blue-800 mb-3 text-lg">
+            Backend Processing Mode
           </h4>
-          <div className="text-sm text-blue-700">
+          <div className="text-base text-blue-700 space-y-2">
             <p>
               <strong>Flow:</strong> Frontend → Node.js Backend → Blockchain →
               Response
@@ -49,6 +63,15 @@ export default function PendingReadingCard({
               <strong>Benefits:</strong> No wallet required, automated gas
               management, faster processing
             </p>
+            <div className="mt-4 text-center">
+              <p className="font-semibold text-blue-800">Contract:</p>
+              <p className="text-blue-900 font-bold text-lg">
+                0x236bD8706661db41730C69BB628894E4bc7b040A
+              </p>
+              <p className="text-sm text-blue-700">
+                View on Etherscan (Sepolia Testnet)
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -56,17 +79,19 @@ export default function PendingReadingCard({
       {/* Spoilage Warning */}
       {spoilageDetected && (
         <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-4">
-          <p className="text-red-800 font-semibold">
-            ⚠️ CRITICAL: Ethylene level exceeded threshold! Complete this
-            reading and take action.
+          <p className="flex items-center gap-2 text-red-800 font-semibold">
+            <AlertTriangle className="w-5 h-5" />
+            CRITICAL: Ethylene level exceeded threshold! Complete this reading
+            and take action.
           </p>
         </div>
       )}
 
       {/* Reading Display */}
       <div className="bg-white rounded-lg p-4 mb-4">
-        <h4 className="font-semibold text-gray-800 mb-2">
-          📊 Current Reading Data
+        <h4 className="flex items-center gap-2 font-semibold text-gray-800 mb-2">
+          <BarChartHorizontal className="w-5 h-5 text-blue-600" />
+          Current Reading Data
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="text-center">
@@ -158,11 +183,22 @@ export default function PendingReadingCard({
                 : "bg-green-500 text-white hover:bg-green-600"
             }`}
           >
-            {isSubmitting
-              ? "⏳ Processing via Backend..."
-              : spoilageDetected
-              ? "🚨 Complete Final Reading (Backend)"
-              : "💾 Process via Backend"}
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <Loader className="w-5 h-5 animate-spin" />
+                Processing via Backend...
+              </span>
+            ) : spoilageDetected ? (
+              <span className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Complete Final Reading (Backend)
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                Process via Backend
+              </span>
+            )}
           </button>
         </div>
       </form>

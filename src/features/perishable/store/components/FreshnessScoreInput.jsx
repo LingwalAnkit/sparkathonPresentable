@@ -1,3 +1,4 @@
+import { BarChartHorizontal, Loader, Sparkles } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -30,7 +31,10 @@ export default function FreshnessScoreInput({
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 border mb-6">
-      <h3 className="text-xl font-bold mb-4">🌟 Freshness Score Assessment</h3>
+      <h3 className="flex items-center gap-2 text-xl font-bold mb-4">
+        <Sparkles className="w-5 h-5 text-yellow-500" />
+        Freshness Score Assessment
+      </h3>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
         <h4 className="font-semibold text-blue-800 mb-2">Current Reading</h4>
@@ -82,7 +86,17 @@ export default function FreshnessScoreInput({
             disabled={isSubmitting}
             className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "⏳ Submitting..." : "🌟 Submit Score"}
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <Loader className="w-4 h-4 animate-spin" />
+                Submitting...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Submit Score
+              </span>
+            )}
           </button>
         </div>
       </form>
@@ -90,7 +104,10 @@ export default function FreshnessScoreInput({
       {/* Freshness History */}
       {freshnessHistory.length > 0 && (
         <div>
-          <h4 className="font-semibold mb-2">📊 Freshness Score History</h4>
+          <h4 className="flex items-center gap-2 font-semibold mb-2">
+            <BarChartHorizontal className="w-5 h-5 text-blue-600" />
+            Freshness Score History
+          </h4>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
             {freshnessHistory.map((score, index) => (
               <div

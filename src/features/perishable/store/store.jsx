@@ -5,11 +5,28 @@ import apiService from "../../../services/apiServices";
 import pythonApiService from "../../../services/pythonApiService";
 import { generateWarehouseTemperature } from "../../../utils/warehouseGenerator";
 
+// Lucide React Icons
+import {
+  Rocket,
+  Package,
+  BarChart3,
+  Bot,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Thermometer,
+  Leaf,
+  DollarSign,
+  Star,
+  Loader2,
+  Warehouse,
+  Activity,
+} from "lucide-react";
+
 // Import components
 import StatusCard from "./components/StatusCard";
 import ReadingsHistoryTable from "./components/ReadingsHistoryTable";
 import SpoilageActionButtons from "./components/SpoilageActionButtons";
-import PendingReadingCard from "./components/PendingReadingCard";
 
 const ETHYLENE_SPOIL_THRESHOLD = 10;
 
@@ -30,7 +47,7 @@ export default function StorageMonitor({
 }) {
   // State management
   const [readings, setReadings] = useState([]);
-  const [status, setStatus] = useState("🚀 Starting automatic monitoring...");
+  const [status, setStatus] = useState("Starting automatic monitoring...");
   const [currentReading, setCurrentReading] = useState(null);
   const [pendingReading, setPendingReading] = useState(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -52,7 +69,7 @@ export default function StorageMonitor({
   // Start monitoring after initial setup
   useEffect(() => {
     if (appleId && !needsInitialSetup) {
-      console.log("🚀 Starting monitoring after initial setup");
+      console.log("Starting monitoring after initial setup");
       startAutomaticMonitoring();
     }
   }, [appleId, needsInitialSetup]);
@@ -65,7 +82,7 @@ export default function StorageMonitor({
     }
 
     setIsSubmittingInitial(true);
-    const toastId = toast.loading("🚀 Setting up initial price...");
+    const toastId = toast.loading("Setting up initial price...");
 
     try {
       // Set initial price in blockchain
@@ -86,13 +103,13 @@ export default function StorageMonitor({
 
       if (result.success) {
         setNeedsInitialSetup(false);
-        toast.success("✅ Initial setup completed!", { id: toastId });
-        setStatus("✅ Initial setup completed. Starting monitoring...");
+        toast.success("Initial setup completed!", { id: toastId });
+        setStatus("Initial setup completed. Starting monitoring...");
       } else {
         throw new Error(result.error || "Initial setup failed");
       }
     } catch (error) {
-      console.error("❌ Initial setup failed:", error);
+      console.error("Initial setup failed:", error);
       toast.error(`Initial setup failed: ${error.message}`, { id: toastId });
     } finally {
       setIsSubmittingInitial(false);
@@ -101,9 +118,9 @@ export default function StorageMonitor({
 
   // Start automatic monitoring
   const startAutomaticMonitoring = () => {
-    console.log("🏪 Starting automatic storage monitoring with AI predictions");
+    console.log("Starting automatic storage monitoring with AI predictions");
     setIsMonitoring(true);
-    setStatus("📦 Automatic monitoring started. Generating first reading...");
+    setStatus("Automatic monitoring started. Generating first reading...");
 
     // Generate first reading immediately
     generateNewReading();
@@ -118,16 +135,16 @@ export default function StorageMonitor({
       ) {
         generateNewReading();
       } else {
-        console.log("⏳ Waiting for current reading to be processed...");
+        console.log("Waiting for current reading to be processed...");
       }
     }, 60000); // Changed to 1 minute
   };
 
-  // Generate new reading with AI prediction
+  // Generate new reading with AI prediction and auto-process
   const generateNewReading = async () => {
     if (pendingReading || isSubmittingTransaction || spoilageDetected) {
       console.log(
-        "🚫 Cannot generate new reading - previous reading still pending"
+        "Cannot generate new reading - previous reading still pending"
       );
       return;
     }
@@ -139,7 +156,7 @@ export default function StorageMonitor({
     const ethylene = generateIncreasingEthylene(newReadingCount);
 
     console.log(
-      `🔍 Reading #${newReadingCount}: Temp=${temp}°C, Ethylene=${ethylene}ppm`
+      `Reading #${newReadingCount}: Temp=${temp}°C, Ethylene=${ethylene}ppm`
     );
 
     const timestamp = Math.floor(Date.now() / 1000);
@@ -151,7 +168,7 @@ export default function StorageMonitor({
         : parseInt(initialPrice);
 
     setCanGenerateNextReading(false);
-    setStatus(`🤖 Generating AI prediction for reading #${newReadingCount}...`);
+    setStatus(`Generating AI prediction for reading #${newReadingCount}...`);
 
     try {
       // Get AI prediction
@@ -178,62 +195,61 @@ export default function StorageMonitor({
         setPendingReading(reading);
         setCurrentReading(reading);
         setTotalReadings(newReadingCount);
-        setStatus(
-          `📊 Reading #${newReadingCount} with AI prediction ready for processing.`
-        );
+        setStatus(`Processing reading #${newReadingCount} automatically...`);
 
         // Check for spoilage
         if (ethylene >= ETHYLENE_SPOIL_THRESHOLD) {
-          console.log("⚠️ SPOILAGE DETECTED! Ethylene level:", ethylene);
+          console.log("SPOILAGE DETECTED! Ethylene level:", ethylene);
           setSpoilageDetected(true);
-          setStatus(
-            "⚠️ Spoilage detected! Complete this reading and take action."
-          );
+          setStatus("Spoilage detected! Processing final reading...");
           setIsMonitoring(false);
           clearInterval(intervalRef.current);
-          toast.error(`🚨 Spoilage detected! Ethylene: ${ethylene} ppm`);
+          toast.error(`Spoilage detected! Ethylene: ${ethylene} ppm`);
         } else {
           toast.success(
-            `📊 Reading #${newReadingCount} with AI prediction ready!`
+            `Reading #${newReadingCount} generated with AI prediction`
           );
         }
+
+        // Automatically process the reading after a short delay
+        setTimeout(() => {
+          handleBackendTransaction(reading);
+        }, 2000); // 2 second delay to show the prediction
       } else {
         throw new Error(prediction.error || "AI prediction failed");
       }
     } catch (error) {
-      console.error("❌ AI prediction failed:", error);
+      console.error("AI prediction failed:", error);
       toast.error(`AI prediction failed: ${error.message}`);
       setCanGenerateNextReading(true);
     }
   };
 
-  // Process reading with AI-predicted values
-  const handleBackendTransaction = async () => {
-    if (!pendingReading) {
-      toast.error("No pending reading to process");
+  // Process reading with AI-predicted values (now automatic)
+  const handleBackendTransaction = async (reading = pendingReading) => {
+    if (!reading) {
+      toast.error("No reading to process");
       return;
     }
 
     setIsSubmittingTransaction(true);
-    const toastId = toast.loading(
-      "💾 Processing reading with AI predictions..."
-    );
+    const toastId = toast.loading("Processing reading with AI predictions...");
 
     try {
       const result = await apiService.processStorageReading({
         appleId,
-        reading: pendingReading,
-        price: pendingReading.predictedPrice,
-        freshnessScore: pendingReading.predictedFreshness,
+        reading: reading,
+        price: reading.predictedPrice,
+        freshnessScore: reading.predictedFreshness,
       });
 
       if (result.success) {
         setReadings((prev) => [
           ...prev,
           {
-            ...pendingReading,
-            price: pendingReading.predictedPrice,
-            freshnessScore: pendingReading.predictedFreshness,
+            ...reading,
+            price: reading.predictedPrice,
+            freshnessScore: reading.predictedFreshness,
             priceTransaction: result.priceTransaction,
             warehouseTransaction: result.warehouseTransaction,
           },
@@ -242,23 +258,22 @@ export default function StorageMonitor({
         setPendingReading(null);
         setCanGenerateNextReading(true);
 
-        toast.success(
-          `✅ Reading #${pendingReading.id} processed with AI predictions!`,
-          { id: toastId }
-        );
+        toast.success(`Reading #${reading.id} processed automatically!`, {
+          id: toastId,
+        });
 
         if (spoilageDetected) {
-          setStatus(`⚠️ Spoilage reading completed. Take immediate action!`);
+          setStatus("Spoilage reading completed. Take immediate action!");
         } else {
           setStatus(
-            `✅ Reading #${pendingReading.id} processed. Ready for next reading.`
+            `Reading #${reading.id} processed. Ready for next reading.`
           );
         }
       } else {
         throw new Error(result.error || "Backend processing failed");
       }
     } catch (error) {
-      console.error("❌ Backend transaction failed:", error);
+      console.error("Backend transaction failed:", error);
       toast.error(`Processing failed: ${error.message}`, { id: toastId });
       setCanGenerateNextReading(true);
     } finally {
@@ -291,9 +306,12 @@ export default function StorageMonitor({
       {/* Initial Setup Form */}
       {needsInitialSetup && (
         <div className="bg-white rounded-xl shadow-md p-6 border mb-6">
-          <h3 className="text-xl font-bold text-blue-600 mb-4">
-            🚀 Initial Price Setup Required
-          </h3>
+          <div className="flex items-center gap-2 mb-4">
+            <Rocket className="h-6 w-6 text-blue-600" />
+            <h3 className="text-xl font-bold text-blue-600">
+              Initial Price Setup Required
+            </h3>
+          </div>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <p className="text-blue-800 font-medium">
               Set the initial price for this apple. AI will predict price
@@ -318,9 +336,19 @@ export default function StorageMonitor({
             <button
               onClick={handleInitialSetup}
               disabled={isSubmittingInitial || !initialPrice}
-              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-gray-400"
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-gray-400 flex items-center gap-2"
             >
-              {isSubmittingInitial ? "⏳ Setting up..." : "🚀 Start Monitoring"}
+              {isSubmittingInitial ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                <>
+                  <Rocket className="h-4 w-4" />
+                  Start Monitoring
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -343,9 +371,12 @@ export default function StorageMonitor({
       {/* AI Integration Notice */}
       {!needsInitialSetup && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-          <h4 className="font-semibold text-green-800 mb-2">
-            🤖 AI-Powered Price & Freshness Prediction
-          </h4>
+          <div className="flex items-center gap-2 mb-2">
+            <Bot className="h-5 w-5 text-green-800" />
+            <h4 className="font-semibold text-green-800">
+              AI-Powered Price & Freshness Prediction
+            </h4>
+          </div>
           <p className="text-green-700 text-sm">
             Each reading uses AI to predict optimal price and freshness score
             based on temperature and ethylene levels. Reading interval: 1
@@ -354,28 +385,38 @@ export default function StorageMonitor({
         </div>
       )}
 
-      {/* Pending Reading Card with AI Predictions */}
+      {/* Pending Reading Card with AI Predictions - Auto Processing */}
       {pendingReading && (
         <div className="bg-white rounded-xl shadow-md p-6 border mb-6">
-          <h3 className="text-xl font-bold text-green-600 mb-4">
-            🤖 AI-Predicted Reading #{pendingReading.id}
-          </h3>
+          <div className="flex items-center gap-2 mb-4">
+            <Bot className="h-6 w-6 text-green-600" />
+            <h3 className="text-xl font-bold text-green-600">
+              AI-Predicted Reading #{pendingReading.id}
+            </h3>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Sensor Data */}
             <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-800 mb-2">
-                📊 Sensor Data
-              </h4>
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="h-5 w-5 text-blue-800" />
+                <h4 className="font-semibold text-blue-800">Sensor Data</h4>
+              </div>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Temperature:</span>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <Thermometer className="h-4 w-4 text-blue-600" />
+                    <span>Temperature:</span>
+                  </div>
                   <span className="font-bold">
                     {pendingReading.temperature}°C
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Ethylene:</span>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <Leaf className="h-4 w-4 text-green-600" />
+                    <span>Ethylene:</span>
+                  </div>
                   <span
                     className={`font-bold ${
                       pendingReading.spoilageRisk
@@ -391,18 +432,25 @@ export default function StorageMonitor({
 
             {/* AI Predictions */}
             <div className="bg-green-50 rounded-lg p-4">
-              <h4 className="font-semibold text-green-800 mb-2">
-                🤖 AI Predictions
-              </h4>
+              <div className="flex items-center gap-2 mb-2">
+                <Bot className="h-5 w-5 text-green-800" />
+                <h4 className="font-semibold text-green-800">AI Predictions</h4>
+              </div>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Predicted Price:</span>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    <span>Predicted Price:</span>
+                  </div>
                   <span className="font-bold text-green-600">
                     ₹{pendingReading.predictedPrice}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Freshness Score:</span>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 text-yellow-600" />
+                    <span>Freshness Score:</span>
+                  </div>
                   <span
                     className={`font-bold ${
                       pendingReading.predictedFreshness >= 75
@@ -419,22 +467,21 @@ export default function StorageMonitor({
             </div>
           </div>
 
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={handleBackendTransaction}
-              disabled={isSubmittingTransaction}
-              className={`px-8 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed ${
-                spoilageDetected
-                  ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-green-500 text-white hover:bg-green-600"
-              }`}
-            >
-              {isSubmittingTransaction
-                ? "⏳ Processing AI Predictions..."
-                : spoilageDetected
-                ? "🚨 Process Final Reading"
-                : "🤖 Process AI Predictions"}
-            </button>
+          {/* Auto Processing Indicator */}
+          <div className="flex justify-center items-center mt-6 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-2 text-gray-600">
+              {isSubmittingTransaction ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Processing automatically...</span>
+                </>
+              ) : (
+                <>
+                  <Activity className="h-5 w-5" />
+                  <span>Auto-processing in progress...</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

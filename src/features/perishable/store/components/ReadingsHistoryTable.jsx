@@ -2,7 +2,7 @@
 export default function ReadingsHistoryTable({ readings }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 border mb-6">
-      <h3 className="text-xl font-bold mb-4">📋 Appended Readings Log</h3>
+      <h3 className="text-xl font-bold mb-4"> Appended Readings Log</h3>
       {readings.length === 0 ? (
         <div className="flex items-center justify-center py-8">
           <div className="text-center">

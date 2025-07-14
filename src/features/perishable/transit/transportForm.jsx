@@ -92,13 +92,29 @@ export default function TransportForm({ appleId, onTransitComplete }) {
     <div className="bg-gray-100 p-6">
       {/* Backend Mode Indicator */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-        <h4 className="font-semibold text-blue-800 mb-2">
-          🔗 Backend Processing Mode
+        <h4 className="font-semibold text-blue-800 mb-3 text-lg">
+          Backend Processing Mode
         </h4>
-        <p className="text-blue-700 text-sm">
-          Transport data is processed through your Node.js backend. Backend
-          automatically handles blockchain transactions and gas management.
-        </p>
+        <div className="text-blue-700 text-base space-y-2">
+          <p>
+            Transport data is processed through your Node.js backend. Backend
+            automatically handles blockchain transactions and gas management.
+          </p>
+          <div className="mt-4 text-center">
+            <p className="font-semibold text-blue-800">Contract:</p>
+            <a
+              href="https://sepolia.etherscan.io/address/0x236bD8706661db41730C69BB628894E4bc7b040A"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-900 font-bold text-lg underline hover:text-blue-700 transition"
+            >
+              0x236bD8706661db41730C69BB628894E4bc7b040A
+            </a>
+            <p className="text-sm text-blue-700 mt-1">
+              View on Etherscan (Sepolia Testnet)
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-row gap-6 w-full">

@@ -1,4 +1,5 @@
 // components/readingHistory.jsx
+import { Activity, Thermometer } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function SensorReadingsHistory({
@@ -104,8 +105,15 @@ export default function SensorReadingsHistory({
                 </span>
               </div>
               <div className="text-right">
-                <div className="text-lg font-semibold">🌡️ {r.t}°C</div>
-                <div className="text-lg font-semibold">🍃 {r.e} ppm</div>
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                  <Thermometer className="w-5 h-5 text-blue-500" />
+                  {r.t}°C
+                </div>
+
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                  <Activity className="w-5 h-5 text-green-600" />
+                  {r.e} ppm
+                </div>
               </div>
             </div>
           ))}

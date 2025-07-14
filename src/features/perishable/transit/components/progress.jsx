@@ -1,9 +1,14 @@
+import { MapPin } from "lucide-react";
+
 export default function JourneyProgress({ journeyInfo }) {
   if (!journeyInfo) return null;
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 border mb-6 w-1/2">
-      <h3 className="text-lg font-semibold mb-4">📍 Journey Progress</h3>
+      <h3 className="flex items-center  mb-4 gap-2">
+        <MapPin />
+        <span className="text-lg font-semibold">Journey Progress</span>
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <p className="text-sm text-gray-600">Current Phase:</p>
