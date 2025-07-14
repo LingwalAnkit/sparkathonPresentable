@@ -1,8 +1,14 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import { config } from "./config";
+
 import { Display } from "./page/display";
 import TransportLifeCycle from "./page/perishableHarvest";
 import Electronics from "./page/electronics";
@@ -10,8 +16,29 @@ import AppleDataDisplay from "./page/data";
 import AppleList from "./page/goodsDisplayList";
 import RouteLanding from "./page/home";
 
-// Configure React Query client with better defaults
+import AdminNavbar from "./components/layout/adminNav";
+import ApplesNavbar from "./components/layout/applesNav";
+
+// React Query client
 const queryClient = new QueryClient();
+
+// Dynamic Navbar inside Router context
+function DynamicNavbar() {
+  const location = useLocation();
+  const path = location.pathname;
+
+  const isApplesPage = path === "/apples";
+  const isAdminPage = [
+    "/perishable",
+    "/electronics",
+    "/display",
+    "/data",
+  ].includes(path);
+
+  if (isApplesPage) return <ApplesNavbar />;
+  if (isAdminPage) return <AdminNavbar />;
+  return null;
+}
 
 export default function App() {
   return (
@@ -44,15 +71,20 @@ export default function App() {
         }}
       />
 
-      {/* Web3 and Query Providers */}
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <Router>
             <div className="min-h-screen flex flex-col">
-              {/* Main Content Area */}
+              {/* Header */}
+              <header className="sticky top-0 z-50 bg-gray-100 backdrop-blur-md">
+                <div className="max-w-7xl mx-auto">
+                  <DynamicNavbar />
+                </div>
+              </header>
+
+              {/* Main Content */}
               <main className="flex-1 relative">
                 <div className="absolute inset-0 bg-gray-100 pointer-events-none" />
-
                 <div className="relative z-10 w-full h-full">
                   <Routes>
                     <Route
@@ -96,7 +128,8 @@ export default function App() {
                       }
                     />
                     <Route path="/apples" element={<AppleList />} />
-                    {/* Catch-all route for 404 */}
+
+                    {/* 404 Page */}
                     <Route
                       path="*"
                       element={

@@ -93,7 +93,7 @@ export default function AppleList() {
       {/* Enhanced Detail Modal */}
       {selected && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-[9999] p-4"
+          className="fixed inset-0 flex items-center justify-center z-[9999] p-4 bg-opacity-70 backdrop-blur-sm "
           onClick={() => setSelected(null)}
         >
           <div

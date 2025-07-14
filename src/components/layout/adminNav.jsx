@@ -6,11 +6,16 @@ function AdminNavbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="bg-gray-100 shadow-md px-6 py-4 flex items-center justify-between rounded-2xl ">
+    <nav className="bg-gray-100 shadow-md px-6 py-4 flex items-center justify-between rounded-2xl mt-6">
       {/* Logo */}
       <div className="text-2xl font-bold text-blue-600">AdminPanel</div>
 
       <ul className="hidden md:flex space-x-6 text-gray-700 font-medium items-center text-lg">
+        <li>
+          <a href="/" className="hover:text-blue-600">
+            Home
+          </a>
+        </li>
         <li>
           <a href="/perishable" className="hover:text-blue-600">
             Perishable

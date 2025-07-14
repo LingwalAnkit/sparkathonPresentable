@@ -1,16 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import AdminNavbar from "../components/layout/adminNav";
 
 export function Display() {
   return (
     <>
-      <header className="sticky top-0 z-50 bg-gray-100 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto">
-          <AdminNavbar />
-        </div>
-      </header>
       <div className="flex justify-center items-center bg-gray-100 mt-6">
         <div className="flex gap-8">
           <motion.div
